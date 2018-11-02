@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20181010135951) do
+ActiveRecord::Schema.define(version: 20181101101107) do
 
   create_table "additional_emails", force: :cascade do |t|
     t.integer "contactable_id",   limit: 4,                   null: false
@@ -147,8 +147,8 @@ ActiveRecord::Schema.define(version: 20181010135951) do
     t.integer "event_id",         limit: 4
     t.string  "question",         limit: 255
     t.string  "choices",          limit: 255
-    t.boolean "multiple_choices",             default: false
-    t.boolean "required"
+    t.boolean "multiple_choices",             default: false, null: false
+    t.boolean "required",                     default: false, null: false
     t.boolean "admin",                        default: false, null: false
   end
 
@@ -372,8 +372,8 @@ ActiveRecord::Schema.define(version: 20181010135951) do
     t.boolean "subscribers_may_post",               default: false, null: false
     t.boolean "anyone_may_post",                    default: false, null: false
     t.string  "preferred_labels",     limit: 255
-    t.boolean "main_email",                         default: false
     t.boolean "delivery_report",                    default: false, null: false
+    t.boolean "main_email",                         default: false
   end
 
   add_index "mailing_lists", ["group_id"], name: "index_mailing_lists_on_group_id", using: :btree
@@ -565,6 +565,20 @@ ActiveRecord::Schema.define(version: 20181010135951) do
 
   add_index "roles", ["person_id", "group_id"], name: "index_roles_on_person_id_and_group_id", using: :btree
   add_index "roles", ["type"], name: "index_roles_on_type", using: :btree
+
+  create_table "service_tokens", force: :cascade do |t|
+    t.integer  "layer_group_id", limit: 4,                     null: false
+    t.string   "name",           limit: 255,                   null: false
+    t.text     "description",    limit: 65535
+    t.string   "token",          limit: 255,                   null: false
+    t.datetime "last_access"
+    t.boolean  "people",                       default: false
+    t.boolean  "people_below",                 default: false
+    t.boolean  "groups",                       default: false
+    t.boolean  "events",                       default: false
+    t.datetime "created_at",                                   null: false
+    t.datetime "updated_at",                                   null: false
+  end
 
   create_table "sessions", force: :cascade do |t|
     t.string   "session_id", limit: 255,   null: false
