@@ -1147,6 +1147,18 @@ de:
         (Gruppen, Anlässe und Abos; keine anderen Personen) sehen.
       only_visible_from_above: Diese Rolle ist nur von Personen in dieser Ebene sichtbar, nicht von Personen aus darüber liegenden Ebenen.
 
+  service_tokens:
+    global:
+      link:
+        add: API-Key hinzufügen
+    list:
+      ability:
+        read: Lesen
+        people_below: Personen von Untergruppen
+        people: Personen dieser Gruppe
+        events: Events dieser Gruppe
+        groups: Gruppen dieser Gruppe
+
   subscriber:
     group:
       form:
