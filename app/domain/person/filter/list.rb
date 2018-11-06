@@ -22,6 +22,7 @@ class Person::Filter::List
   end
 
   def filtered_accessibles
+    return filter unless user
     filter.where(id: accessibles.unscope(:select).select(:id)).uniq
   end
 
