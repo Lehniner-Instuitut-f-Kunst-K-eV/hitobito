@@ -35,6 +35,7 @@
 #  participant_number          :string(255)
 #  creator_id                  :integer
 #  participant_number_internal :string(255)
+#  identification_number       :integer
 #
 
 class Invoice < ActiveRecord::Base

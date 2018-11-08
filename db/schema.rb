@@ -264,6 +264,7 @@ ActiveRecord::Schema.define(version: 20181108131258) do
     t.string  "participant_number",          limit: 255
     t.string  "email",                       limit: 255
     t.string  "participant_number_internal", limit: 255
+    t.integer "identification_number",       limit: 4
   end
 
   add_index "invoice_configs", ["group_id"], name: "index_invoice_configs_on_group_id", using: :btree
@@ -306,6 +307,7 @@ ActiveRecord::Schema.define(version: 20181108131258) do
     t.string   "participant_number",          limit: 255
     t.integer  "creator_id",                  limit: 4
     t.string   "participant_number_internal", limit: 255
+    t.integer  "identification_number",       limit: 4
   end
 
   add_index "invoices", ["esr_number"], name: "index_invoices_on_esr_number", using: :btree
@@ -372,8 +374,8 @@ ActiveRecord::Schema.define(version: 20181108131258) do
     t.boolean "subscribers_may_post",               default: false, null: false
     t.boolean "anyone_may_post",                    default: false, null: false
     t.string  "preferred_labels",     limit: 255
-    t.boolean "main_email",                         default: false
     t.boolean "delivery_report",                    default: false, null: false
+    t.boolean "main_email",                         default: false
   end
 
   add_index "mailing_lists", ["group_id"], name: "index_mailing_lists_on_group_id", using: :btree
