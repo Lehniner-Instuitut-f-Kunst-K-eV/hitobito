@@ -2,14 +2,18 @@ en:
   global:
     'yes': "yes"
     'no': "no"
+    ok: OK
     unknown: unknown
     nobody: nobody
+    all: all
     from: from
     until: to
     no_list_entries: No entries found.
     confirm_delete: Do you really want to delete this entry?
     do_not_fill: Please do not fill in this field
     chosen_no_results: No entries found with
+    selected: selected
+    columns: Columns
     gender:
       male: male
       female: female
@@ -24,10 +28,12 @@ en:
     button:
       save: Save
       cancel: Cancel
+      close: close
       search: Search
       back: Back
       refresh: Update
       print: Print
+      copy: Copy
     link:
       show: Show
       edit: Edit
@@ -40,15 +46,34 @@ en:
         other: '%{count} errors prevented the saving of this post:'
     tabs:
       info: Info
+      settings: Settings
     search:
       placeholder: 'Search...'
       placeholder_person: 'Search person...'
       placeholder_group: 'Search group...'
       placeholder_event: 'Search event...'
+      placeholder_company_name: 'search company name...'
   list:
     index:
       title: 'Listing %{models}'
   crud:
+    show:
+      title: "%{model}"
+    new:
+      title: "New %{model}"
+    edit:
+      title: "Edit %{model}"
+    create:
+      flash:
+        success: "%{model} was successfully created."
+    update:
+      flash:
+        success: "%{model} was successfully updated."
+    destroy:
+      flash:
+        success: "%{model} was successfully deleted."
+        failure: "%{model} could not be deleted."
+  modal_crud:
     show:
       title: "%{model}"
     new:
@@ -78,9 +103,13 @@ en:
       placeholder_value: E-Mail
       placeholder_type: Designation (Home, Work, ...)
       tooltip_mailings: Shipments of subscriptions, confirmations via e-mail, etc. will be sent in addition to all addresses selected here.
+    address_fields:
+      updates_household_address: address will be updated for the household
   custom_content_decorator:
     available_placeholders: "Available placeholders: %{placeholders}"
     available_placeholders_empty: 'No placeholders available'
+  dropdown:
+    last_used: 'last used'
   dropdown/event/group_filter:
     all_groups: 'All groups'
   dropdown/event/events_export:
@@ -98,10 +127,19 @@ en:
     button: 'Export'
     csv: 'CSV'
     xlsx: 'Excel'
+    vcard: 'vCard'
     labels: 'Labels'
+    pdf: 'PDF'
     emails: 'E-Mail addresses'
     addresses: 'Address list'
     everything: 'All information'
+    selection: 'Column selection'
+  dropdown/invoices:
+    download: 'export'
+    print: 'print'
+    labels: 'labels'
+    csv: 'CSV'
+    pdf: 'PSD'
   devise:
     failure:
       already_authenticated: 'You are already registered.'
@@ -121,7 +159,7 @@ en:
       new:
         sign_in: Sign in
       form:
-        sign_in: 'Sign in'
+        sign_in: Sign in
     passwords:
       send_instructions: 'In a few minutes, you''ll receive an e-mail with instructions how to reset your password.'
       updated: 'Your password has been changed. You''re now logged in.'
@@ -183,13 +221,16 @@ en:
         title: 'Available courses'
         explanation: 'Courses of your group and their top groups are shown here. Other courses you''ll find in the organizing group.'
         csv_export_button: 'CSV export'
+        ical_export_button: 'calendar export'
       events:
         title: 'Next events'
         explanation: 'Events of your groups and their top groups are shown here. Other events you''ll find in the organizing group.'
+      apply_until: 'until %{date}'
     application_market:
       already_assigned: 'This person was already assigned or registered for a different event.'
       participation:
-        registered_at: 'Registration on %{date}'
+        registered_at: 'Registration on %{datetime}'
+        town: town
       prio_buttons:
         national_waitinglist: 'national waiting list'
       index:
@@ -213,10 +254,24 @@ en:
         qualifications:
           for_participants: 'Qualifications for participants'
           for_leaders: 'Qualifications for leaders'
+      precondition_fields:
+        add_precondition_grouping: '+ add precondition'
+        add_precondition: 'add'
+      qualifications:
+        or: or
+        and: and
+    participation_contact_datas:
+      edit:
+        title: Contact details of the participating person
+        wizard_title: Contact data
+        save: Next
     participations:
+      edit:
+        title: Registration
       approvals:
         title: Approval
       specific_information: 'Specific information'
+      application_answers: Registration details
       no_answer_given: '(not answered)'
       actions_show:
         change_contact_data_button: 'Change contact data'
@@ -227,7 +282,7 @@ en:
         title_new: "Register as %{role}"
         title_edit: "Edit registration from %{person}"
         apply: 'Register'
-        explain_required_checkmark: 'Reply mandatory'
+        explain_required_checkmark: '* = Reply mandatory'
       application_fields:
         alternative_dates_info: 'Please enter more suitable courses.'
         course_information: 'Information about the courses'
@@ -251,7 +306,7 @@ en:
         confirmation: "Are you sure, that you want to cancel your registration?"
     register:
       register:
-        title: Collect contact data
+        title: Contact details of the participating person
       index:
         sign_in: Register
         login: Login
@@ -259,6 +314,11 @@ en:
       email_check:
         next: Further
         enter_email: Please enter your email address so you can register for the event.
+    participation_lists:
+      new:
+        title: Assign persons to %{event_label}
+        event_search: Search event...
+        submit: add
   events:
     application_fields:
       caption_signature: Participants must sign the application
@@ -270,17 +330,25 @@ en:
       insert_general_information: Insert standard description
     form:
       caption_external_applications: 'Externals can sign up for this event'
-      caption_prioritization: 'Participants may set two additional courses as alternatives'
-      caption_requires_approval: 'The group leader will be informed and has to confirm your registration'
+      caption_prioritization: 'Participants may set two additional courses as alternatives.'
+      caption_requires_approval: 'The group leader will be informed and has to confirm your registration.'
+      caption_participations_visible: 'Participants can see each other in the participants list.'
       times_are_optional: Times are optional
-      explain_application_questions: Here you can request further information for the application. Give possible answers separated by a comma or leave the field blank to allow any answers.
-      caption_applications_cancelable: Participants can cancel their registration
+      explain_application_questions: Here you can request further information for the application.
+      explain_choices: Leave blank for free text answer, one or more answer choices (comma separated) for selection.
+      explain_admin_questions: Here you can define further details per participant, which are only used for course administration.
+      explain_contact_attrs: Here you can choose which contact details should be requested during registration.
+      caption_applications_cancelable: Participants can cancel their registration.
+      caption_waiting_list: If there are no more places available, new registrations automatically end up on the waiting list.
     form_tabs:
       general: General
+      application_questions: Registration details
+      contact_attrs: Contact data
     global:
       link:
         add_event: Create event
         add_event/course: Create course
+        duplicate: Duplicate
     minimum_age_with_years: '%{minimum_age} years (vintage)'
     new:
       title_event: Create event
@@ -291,6 +359,7 @@ en:
   event/applications:
     approved: 'The application was approved.'
     rejected: 'The application was declined.'
+    directly_to_waiting_list: 'All places are taken, so registration is directly on the waiting list.'
   event/application_decorator:
     approval:
       approved: 'Course approval confirmed'
@@ -305,6 +374,7 @@ en:
   event/participations:
     full_entry_label: '%{model_label} from <i>%{person}</i> in <i>%{event}</i>'
     success: '%{full_entry_label} has successfully been created. Please check the contact data, and update them if necessary.'
+    waiting_list: 'All places are currently taken, registration is on the waiting list.'
     show:
       link:
         delete: 'Delete application'
@@ -314,6 +384,7 @@ en:
       remove: 'Markes course as not passed and removes qualifications.'
   event/precondition_checker:
     preconditions_not_fulfilled: '<b>Prerequisites for registration are not met.</ b>'
+    below_minimum_age: "Age limit falls below %{course_minimum_age}"
     qualifications_missing: "The following qualifications are missing: %{missing}"
   event/register:
     not_logged_in: "You must log in for the registration of the event '%{event}'. "
@@ -333,17 +404,35 @@ en:
       one: '%{count} registered'
       other: '%{count} registered'
     participants_info_with_limit:
-      one: '%{count} registered for %{limit} plesac'
+      one: '%{count} registered for %{limit} place'
       other: '%{count} registered for %{limit} places'
     active_participants_info:
       one: '%{count} assigned registration'
       other: '%{count} assigned registrations'
+  event_feeds:
+    integrate: Integrate into calendar
+    show:
+      title: 'Integrate my events into calendars '
+      url: 'URL: %{url}'
+      create_url: Create address
+      url_description: 'With this address you can access your events from other applications. Note: Only share this address with people who are allowed to see all your event details.'
+      reset_url: Reset URL
+      reset_url_description: 'If you suspect abuse, you can reset the address and thus make the current one invalid. All calendars that still know the old address will no longer be able to see your events.'
+    update:
+      flash:
+        create: Address was created.
+        reset: Address has been updated.
   filter_navigation/dropdown:
     additional_views: 'Further views'
   filter_navigation/people:
     custom_filter: 'Own filter'
     entire_layer: 'Whole level'
     entire_group: 'Whole group'
+    new_filter: 'New filter...'
+    duplicates: 'Duplicates'
+  filter_navigation/events:
+    all: 'all'
+    layer: 'only %{layer}'
   filter_navigation/event/participations:
     predefined_filters:
       all: All people
@@ -351,6 +440,7 @@ en:
       participants: Participants
   full_text:
     index:
+      title: 'results'
       incomplete_search_request: 'Please enter at least two characters.'
   group:
     merge:
@@ -396,12 +486,14 @@ en:
     global:
       link:
         add: Create group
+        deleted_person: Without roles
     new:
       title: 'Create %{model}'
     reactivated: "Group <i>%{group}</ i> has been successfully reactivated."
     subgroups: 'Subgroups'
     tabs:
       deleted: 'Deleted'
+    export_enqueued: 'Export is started in the background and downloaded after completion.'
   group/person_add_requests:
     deactivated: Manual approval deactivated
     activated: Manual approval activated
@@ -426,8 +518,17 @@ en:
       other: "%{count} records read succesfully."
   import/person_importer:
     row_with_error: "row %{row}: %{errors}"
-  import/person_doublette_finder:
-    duplicates: "%{count} results in duplicate detection."
+  invoices:
+    filter:
+      due_since: due since
+      due_since_list:
+        one_day: yesterday
+        one_week: one week
+        one_month: one month
+    payed: paid
+  invoice_configs:
+    form_tabs:
+      general: general
   label_formats:
     global_labels: "Global label formats"
     own_labels: My label formats
@@ -442,7 +543,7 @@ en:
       title: Create label format
   layouts:
     nav:
-      sign_out: 'Log off'
+      sign_out: 'Sign out'
     unauthorized:
       forgot_password: 'Forgot your password?'
     application:
@@ -466,12 +567,15 @@ en:
     anyone_may_post: 'Anyone may write to the mailing list'
     anyone_may_not_post: '<strong>Not</strong> anyone may write to the mailing list'
     subscribe: 'Log in'
-    unsubscribe: 'Log off'
+    unsubscribe: 'Sign out'
   navigation:
     groups: 'Groups'
     events: 'Events'
     courses: 'Courses'
     admin: 'Settings'
+    invoices: 'Invoices'
+  notes:
+    new_note: Add note
   qualifications:
     in_years: '%{years} years'
     valid_until: 'to %{date}'
@@ -523,6 +627,9 @@ en:
         mailing_list:
           approved: "The request for access for %{person} has already been granted."
           rejected: "The request for access for %{person} has already been denied."
+    households:
+      fields:
+        lives_in_household_with: "Lives in household with"
     csv_imports:
       description:
         header: CSV files
@@ -573,9 +680,10 @@ en:
         request_link: Answer request
       ask_responsibles:
         request_link: Answer request
-    tags:
-      list:
-        category_other: Other
+    subscriptions:
+      index:
+        my_subscriptions: My Subscriptions
+        available_subscriptions: Available Subscriptions
   person/csv_imports:
     invalid_file: Please select a valid CSV file.
     duplicate_keys:
@@ -613,6 +721,8 @@ en:
     tabs:
       history: History
       log: log
+      invoices: Invoices
+      subscriptions: Subscriptions
     actions_show:
       send_login: Send login
       send_login_tooltip:
@@ -622,12 +732,15 @@ en:
     actions_index:
       add_person: Add Person
       import_list: Import list
+      person_duplicate_list: Duplicates
     add_requests:
       approve_title: 'Approve request'
       reject_title: 'Deny request'
     attrs:
       additional_data: More information
       events: My next events
+    contact_data:
+      lives_in_household_with: Lives in household with
     email_field:
       used_as_login: Is used as login
       only_changeable_by_superior: >
@@ -646,6 +759,12 @@ en:
       no_changes: So far, no changes were recorded.
     pdf:
       cannot_fit: The addresses do not fit into the defined label format.
+    print:
+      name: "Name"
+      address: "Address"
+      email: "E-Mail"
+      home_phone: "Private"
+      mobile_phone: "Mobile"
     roles:
       title: Active roles
     roles_aside:
@@ -708,6 +827,7 @@ en:
         please_choose_group: Please select a group
       tags:
         only_add_persons_with_tags: 'Only add people with one of the following tags:'
+        exclude_persons_with_tags: 'Exclude people with one of the following tags:'
     exclude_person:
       form:
         exclude_subscriber: 'Exclude person'
@@ -738,6 +858,7 @@ en:
       export_not_allowed: 'You are not allowed to export the subscribers, because it contains people outside of your authorization.'
     subscription:
       only_persons_with: 'Only people with:'
+      persons_excluded_with: 'Exclude people with:'
   version:
     attribute_change:
       from_to: "%{attr} has been changed from <i>%{from}</i> to <i>%{to}</i>."
@@ -751,6 +872,8 @@ en:
         create: "Access for <i>%{label}</i> requested."
         update: "Update of request for <i>%{label}</i>: %{changeset}"
         destroy: "Request for <i>%{label}</i> has been answered."
+  tags_merge:
+    category: Category
   views:
     pagination:
       next: '>>'

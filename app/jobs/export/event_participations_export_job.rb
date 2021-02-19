@@ -23,9 +23,20 @@ class Export::EventParticipationsExportJob < Export::ExportBaseJob
   def exporter
     if full_export?
       Export::Tabular::People::ParticipationsFull
+    elsif household?
+      Export::Tabular::People::ParticipationsHouseholds
+    elsif table_display?
+      Export::Tabular::People::TableDisplays
     else
       Export::Tabular::People::ParticipationsAddress
     end
+  end
+
+  def data
+    return super unless table_display?
+
+    table_display = TableDisplay::Participations.find_or_initialize_by(person_id: @user_id)
+    Export::Tabular::People::TableDisplays.export(@format, entries, table_display)
   end
 
   def full_export?
@@ -33,4 +44,11 @@ class Export::EventParticipationsExportJob < Export::ExportBaseJob
     @options[:details] && ability.can?(:show_details, entries.first)
   end
 
+  def household?
+    @options[:household]
+  end
+
+  def table_display?
+    @options[:selection]
+  end
 end

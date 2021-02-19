@@ -1,6 +1,4 @@
-# encoding: utf-8
-
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2019, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -21,9 +19,10 @@ class ListController < ApplicationController
 
   delegate :model_class, :models_label, to: 'self.class'
 
-  hide_action :model_class, :models_label, :inheritable_root_controller
-
   respond_to :html
+  include DryCrud::RenderCallbacks
+
+  define_render_callbacks :index
 
   ##############  ACTIONS  ############################################
 
@@ -108,10 +107,9 @@ class ListController < ApplicationController
 
   end
 
-  include RenderCallbacks
   include Searchable
   include Sortable
   include Rememberable
-  include Nestable
+  prepend Nestable
 
 end

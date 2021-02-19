@@ -15,7 +15,7 @@ describe PaperTrail::VersionDecorator, :draper_with_helpers, versioning: true do
   let(:version)   { PaperTrail::Version.where(main_id: person.id).order(:created_at, :id).last }
   let(:decorator) { PaperTrail::VersionDecorator.new(version) }
 
-  before { PaperTrail.whodunnit = nil }
+  before { PaperTrail.request.whodunnit = nil }
 
   context '#header' do
     subject { decorator.header }
@@ -27,7 +27,7 @@ describe PaperTrail::VersionDecorator, :draper_with_helpers, versioning: true do
 
     context 'with current user' do
       before do
-        PaperTrail.whodunnit = person.id.to_s
+        PaperTrail.request.whodunnit = person.id.to_s
         update_attributes
       end
 
@@ -45,7 +45,7 @@ describe PaperTrail::VersionDecorator, :draper_with_helpers, versioning: true do
 
     context 'with current user' do
       before do
-        PaperTrail.whodunnit = person.id.to_s
+        PaperTrail.request.whodunnit = person.id.to_s
         update_attributes
       end
 
@@ -78,9 +78,32 @@ describe PaperTrail::VersionDecorator, :draper_with_helpers, versioning: true do
     end
 
     context 'with association changes' do
-      before { Fabricate(:social_account, contactable: person, label: 'Foo', name: 'Bar') }
 
-      it { is_expected.to match(/<div>Social Media/) }
+      context 'social account' do
+        before { Fabricate(:social_account, contactable: person, label: 'Foo', name: 'Bar') }
+
+        it { is_expected.to match(/<div>Social Media/) }
+      end
+
+      context 'mailing list' do
+        let(:list) { mailing_lists(:leaders) }
+
+        it 'new add request' do
+          Person::AddRequest::MailingList.create!(person: person, body: list, requester: people(:top_leader))
+          expect(subject).to eq "<div>Zugriffsanfrage für <i>Abo Leaders in Top Layer Top</i> wurde gestellt.</div>"
+        end
+
+        it 'destroyed add request' do
+          Person::AddRequest::MailingList.create!(person: person, body: list, requester: people(:top_leader)).destroy!
+          expect(subject).to eq "<div>Zugriffsanfrage für <i>Abo Leaders in Top Layer Top</i> wurde beantwortet.</div>"
+        end
+
+        it 'destroyed mailing list' do
+          Person::AddRequest::MailingList.create!(person: person, body: list, requester: people(:top_leader))
+          list.destroy
+          expect(subject).to eq "<div>Zugriffsanfrage für <i>unbekannt</i> wurde beantwortet.</div>"
+        end
+      end
     end
   end
 
@@ -131,9 +154,15 @@ describe PaperTrail::VersionDecorator, :draper_with_helpers, versioning: true do
       is_expected.to eq('Social Media Adresse <i>Bar (Foo)</i> wurde hinzugefügt.')
     end
 
+    it 'sanitizes html' do
+      Fabricate(:social_account, contactable: person, label: 'Foo', name: '<script>alert("test")</script>')
+
+      is_expected.to eq('Social Media Adresse <i>alert("test") (Foo)</i> wurde hinzugefügt.')
+    end
+
     it 'builds update text' do
       account = Fabricate(:social_account, contactable: person, label: 'Foo', name: 'Bar')
-      account.update_attributes!(name: 'Boo')
+      account.update!(name: 'Boo')
 
       is_expected.to eq('Social Media Adresse <i>Bar (Foo)</i> wurde aktualisiert: Name wurde von <i>Bar</i> auf <i>Boo</i> geändert.')
     end
@@ -154,7 +183,7 @@ describe PaperTrail::VersionDecorator, :draper_with_helpers, versioning: true do
   end
 
   def update_attributes
-    person.update_attributes!(town: 'Bern', zip_code: '3007', email: 'new@hito.example.com')
+    person.update!(town: 'Bern', zip_code: '3007', email: 'new@hito.example.com')
   end
 
 end

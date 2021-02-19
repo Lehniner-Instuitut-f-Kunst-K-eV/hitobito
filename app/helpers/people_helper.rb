@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2019, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -11,28 +11,15 @@ module PeopleHelper
     person.gender_label
   end
 
+  def format_person_email(person)
+    mail_to(person.email)
+  end
+
   def dropdown_people_export(details = false, emails = true, labels = true, households = true)
     Dropdown::PeopleExport.new(self, current_user, params, details: details,
                                                            emails: emails,
                                                            labels: labels,
                                                            households: households).to_s
-  end
-
-  def invoice_button(people)
-    finance_groups = current_user.finance_groups
-    if finance_groups.size == 1
-      invoice_button_single(people, finance_groups.first)
-    elsif finance_groups.size > 1
-      Dropdown::InvoiceNew.new(self,
-                               t('crud.new.title', model: Invoice.model_name.human),
-                               finance_groups, people, :plus).to_s
-    end
-  end
-
-  def invoice_button_single(people, finance_group)
-    action_button(t('crud.new.title', model: Invoice.model_name.human),
-                  new_invoices_for_people_path(finance_group, people),
-                  :plus)
   end
 
   def format_birthday(person)
@@ -94,7 +81,7 @@ module PeopleHelper
 
   def link_to_address(person)
     if [person.address, person.zip_code, person.town].all?(&:present?)
-      link_to(icon('map-marker', class: 'fa-2x'), person_address_url(person), target: '_blank')
+      link_to(icon('map-marker-alt', class: 'fa-2x'), person_address_url(person), target: '_blank')
     end
   end
 
@@ -111,6 +98,18 @@ module PeopleHelper
     URI::HTTP.build(host: 'nominatim.openstreetmap.org',
                     path: '/search.php',
                     query: query_params).to_s
+  end
+
+  def upcoming_events_title
+    title = [t('.events')]
+    if entry.id == current_user.id
+      title << link_to(icon(:'calendar-alt'), event_feed_path, title: t('event_feeds.integrate'))
+    end
+    safe_join(title, ' ')
+  end
+
+  def person_event_feed_url
+    event_feed_url(token: current_user.event_feed_token, format: :ics)
   end
 
 end

@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -21,6 +21,9 @@ module Export
         @exportable = exportable
       end
 
+      # Generate CSV and convert it to a configurable encoding. By default, it
+      # is converted to ISO-8859-1. If the default-configuration is removed,
+      # the data is not converted and output as UTF-8.
       def call
         convert(generate)
       end
@@ -36,7 +39,8 @@ module Export
         end
       end
 
-      # convert to 8859 for excel which is too stupid to handle utf-8
+      # convert to ISO-8859-1 (configurable, though) for Excel which is...,
+      # well, has some success-potential to handle UTF-8
       def convert(data)
         if Settings.csv.encoding.present?
           data.encode(Settings.csv.encoding, undef: :replace, invalid: :replace)

@@ -10,9 +10,9 @@
 # Table name: custom_contents
 #
 #  id                    :integer          not null, primary key
-#  key                   :string           not null
-#  placeholders_required :string
-#  placeholders_optional :string
+#  key                   :string(255)      not null
+#  placeholders_optional :string(255)
+#  placeholders_required :string(255)
 #
 
 require 'spec_helper'
@@ -23,7 +23,7 @@ describe CustomContent do
 
   context '.list' do
     it 'contains one entry per main item' do
-      expect(CustomContent.list.size).to eq(9)
+      expect(CustomContent.list.size).to eq(11)
     end
   end
 
@@ -74,11 +74,11 @@ describe CustomContent do
     it 'replaces all placeholders' do
       subject.body = 'Hello {recipient-name}, here is your site to login: {login-url}. Goodbye {recipient-name}'
       output = subject.body_with_values('recipient-name' => 'Fred', 'login-url' => 'example.com/login')
-      expect(output).to eq('Hello Fred, here is your site to login: example.com/login. Goodbye Fred')
+      expect(output).to match('Hello Fred, here is your site to login: example.com/login. Goodbye Fred')
     end
 
     it 'handles contents without placeholders' do
-      expect(custom_contents(:notes).body_with_values).to eq('Bla bla bla bla')
+      expect(custom_contents(:notes).body_with_values).to match('Bla bla bla bla')
     end
 
     it 'raises an error if placeholder is missing' do
@@ -92,7 +92,7 @@ describe CustomContent do
     it 'does not care about unused placeholders' do
       subject.body = 'Hello You, here is your site to login: {login-url}'
       output = subject.body_with_values('recipient-name' => 'Fred', 'login-url' => 'example.com/login')
-      expect(output).to eq('Hello You, here is your site to login: example.com/login')
+      expect(output).to match('Hello You, here is your site to login: example.com/login')
     end
   end
 

@@ -1,6 +1,6 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -41,7 +41,13 @@ module LayoutHelper
   end
 
   def icon(name, options = {})
-    add_css_class(options, "fa fa-#{name}")
+    name = name.to_s.dasherize
+
+    if options.fetch(:filled, true)
+      add_css_class(options, "fa fa-#{name}")
+    else
+      add_css_class(options, "far fa-#{name}")
+    end
     content_tag(:i, '', options)
   end
 
@@ -100,7 +106,23 @@ module LayoutHelper
     end
   end
 
+  def header_logo
+    logo_group = closest_group_with_logo
+
+    return image_tag(logo_group.logo.to_s) if logo_group
+
+    wagon_image_pack_tag(Settings.application.logo.image, alt: Settings.application.name)
+  end
+
   private
+
+  def closest_group_with_logo
+    return unless @group
+
+    @group.self_and_ancestors.reverse.find do |group|
+      group.logo.present?
+    end
+  end
 
   def include_add_button(title, add_path)
     button = action_button(ti(:'link.add'),
@@ -112,6 +134,8 @@ module LayoutHelper
 
   def button(label, url, icon_name = nil, options = {})
     add_css_class options, 'btn'
+    url = url.is_a?(ActionController::Parameters) ? url.to_unsafe_h.merge(only_path: true) : url
+
     link_to(url, options) do
       html = [label]
       html.unshift icon(icon_name) if icon_name

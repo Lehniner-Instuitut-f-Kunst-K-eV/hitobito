@@ -168,19 +168,16 @@ describe MailRelay::BulkMail do
           let(:error) { "#{error_message} #{invalid_domain_email}" }
 
           it 'skips recipients with invalid mail domain' do
-            expect(message)
-              .to receive(:deliver)
-              .and_raise(error)
+            expect(Truemail)
+              .to receive(:valid?)
+              .with(invalid_domain_email)
+              .and_return(false)
 
-            expect(message)
-              .to receive(:deliver)
-              .twice
-
-            failed_entry = [invalid_domain_email, error]
+            failed_entry = [invalid_domain_email, 'invalid e-mail address']
 
             expect_any_instance_of(DeliveryReportMailer)
               .to receive(:bulk_mail)
-              .with(delivery_report_to, message, 15, instance_of(ActiveSupport::TimeWithZone), [failed_entry])
+              .with(delivery_report_to, envelope_sender, message, 15, instance_of(ActiveSupport::TimeWithZone), [failed_entry])
 
             expect(logger)
               .to receive(:info)
@@ -277,7 +274,7 @@ describe MailRelay::BulkMail do
 
         expect_any_instance_of(DeliveryReportMailer)
           .to receive(:bulk_mail)
-          .with(delivery_report_to, message, 42, instance_of(ActiveSupport::TimeWithZone), [])
+          .with(delivery_report_to, envelope_sender, message, 42, instance_of(ActiveSupport::TimeWithZone), [])
 
         bulk_mail.deliver
         expect(failed_recipients.size).to eq(0)

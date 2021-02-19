@@ -1,4 +1,10 @@
-# encoding: utf-8
+# frozen_string_literal: true
+
+#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  hitobito and licensed under the Affero General Public License version 3
+#  or later. See the COPYING file at the top-level directory or at
+#  https://github.com/hitobito/hitobito.
+
 # == Schema Information
 #
 # Table name: groups
@@ -24,12 +30,7 @@
 #  updater_id                  :integer
 #  deleter_id                  :integer
 #  require_person_add_requests :boolean          default(FALSE), not null
-#
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
-#  hitobito and licensed under the Affero General Public License version 3
-#  or later. See the COPYING file at the top-level directory or at
-#  https://github.com/hitobito/hitobito.
 require 'spec_helper'
 
 describe Group do
@@ -122,62 +123,62 @@ describe Group do
 
     context 'on update' do
       it 'at the beginning' do
-        groups(:bottom_layer_two).update_attributes!(name: 'AAA')
+        groups(:bottom_layer_two).update!(name: 'AAA')
         expect(groups(:top_layer).children.order(:lft).collect(&:name)).to eq [
           'AAA', 'Bottom One', 'TopGroup', 'Toppers']
       end
 
       it 'at the beginning with same name' do
-        groups(:bottom_layer_two).update_attributes!(name: 'Bottom One')
+        groups(:bottom_layer_two).update!(name: 'Bottom One')
         expect(groups(:top_layer).children.order(:lft).collect(&:name)).to eq [
           'Bottom One', 'Bottom One', 'TopGroup', 'Toppers']
       end
 
       it 'in the middle keeping position right' do
-        groups(:bottom_layer_two).update_attributes!(name: 'Frosch')
+        groups(:bottom_layer_two).update!(name: 'Frosch')
         expect(groups(:top_layer).children.order(:lft).collect(&:name)).to eq [
          'Bottom One', 'Frosch', 'TopGroup', 'Toppers']
       end
 
       it 'in the middle keeping position left' do
-        groups(:bottom_layer_two).update_attributes!(name: 'Bottom P')
+        groups(:bottom_layer_two).update!(name: 'Bottom P')
         expect(groups(:top_layer).children.order(:lft).collect(&:name)).to eq [
          'Bottom One', 'Bottom P', 'TopGroup', 'Toppers']
       end
 
       it 'in the middle moving right' do
-        groups(:bottom_layer_two).update_attributes!(name: 'TopGzzz')
+        groups(:bottom_layer_two).update!(name: 'TopGzzz')
         expect(groups(:top_layer).children.order(:lft).collect(&:name)).to eq [
          'Bottom One', 'TopGroup', 'TopGzzz', 'Toppers']
       end
 
       it 'in the middle moving left' do
-        groups(:top_group).update_attributes!(name: 'Bottom P')
+        groups(:top_group).update!(name: 'Bottom P')
         expect(groups(:top_layer).children.order(:lft).collect(&:name)).to eq [
          'Bottom One', 'Bottom P', 'Bottom Two', 'Toppers']
       end
 
       it 'in the middle with same name' do
-        groups(:bottom_layer_two).update_attributes!(name: 'TopGroup')
+        groups(:bottom_layer_two).update!(name: 'TopGroup')
         expect(groups(:top_layer).children.order(:lft).collect(&:name)).to eq [
          'Bottom One', 'TopGroup', 'TopGroup', 'Toppers']
       end
 
       it 'at the end' do
-        groups(:bottom_layer_two).update_attributes!(name: 'ZZ Top')
+        groups(:bottom_layer_two).update!(name: 'ZZ Top')
         expect(groups(:top_layer).children.order(:lft).collect(&:name)).to eq [
          'Bottom One', 'TopGroup', 'Toppers', 'ZZ Top']
       end
 
       it 'at the end with same name' do
-        groups(:bottom_layer_two).update_attributes!(name: 'Toppers')
+        groups(:bottom_layer_two).update!(name: 'Toppers')
         expect(groups(:top_layer).children.order(:lft).collect(&:name)).to eq [
          'Bottom One', 'TopGroup', 'Toppers', 'Toppers']
       end
 
       context 'with short_name' do
         it 'at the end' do
-          groups(:bottom_layer_two).update_attributes!(short_name: 'XXX')
+          groups(:bottom_layer_two).update!(short_name: 'XXX')
           expect(groups(:top_layer).children.order(:lft).collect(&:display_name)).to eq [
            'Bottom One', 'TopGroup', 'Toppers', "XXX"]
         end
@@ -185,7 +186,7 @@ describe Group do
 
       context 'with lowercase' do
         it 'in the middle' do
-          groups(:bottom_layer_two).update_attributes!(name: 'topGroupX')
+          groups(:bottom_layer_two).update!(name: 'topGroupX')
           expect(groups(:top_layer).children.order(:lft).collect(&:display_name)).to eq [
            'Bottom One', 'TopGroup', 'topGroupX', 'Toppers']
         end
@@ -302,7 +303,10 @@ describe Group do
 
   context '.all_types' do
     it 'lists all types' do
-      Group.all_types =~ [Group::TopLayer, Group::TopGroup, Group::BottomLayer, Group::BottomGroup, Group::GlobalGroup]
+      expect(Group.all_types.count).to eq(5)
+      [Group::TopLayer, Group::TopGroup, Group::BottomLayer, Group::BottomGroup, Group::GlobalGroup].each do |t|
+        expect(Group.all_types).to include(t)
+      end
     end
   end
 
@@ -424,7 +428,7 @@ describe Group do
     let(:group) { groups(:top_group) }
 
     subject { group }
-    before { group.update_attributes!(contactable) }
+    before { group.update!(contactable) }
 
     context 'no contactable but contact info'  do
       its(:contact)   { should be_blank }
@@ -463,6 +467,47 @@ describe Group do
     it 'is destroyed group when group gets destroyed' do
       group = Fabricate(Group::BottomLayer.sti_name, name: 'g', parent: parent)
       expect { group.destroy }.to change { InvoiceConfig.count }.by(-1)
+    end
+  end
+
+  describe 'e-mail validation' do
+
+    let(:group) { groups(:top_layer) }
+
+    before { allow(Truemail).to receive(:valid?).and_call_original }
+
+    it 'does not allow invalid e-mail address' do
+      group.email = 'blabliblu-ke-email'
+
+      expect(group).not_to be_valid
+      expect(group.errors.messages[:email].first).to eq('ist nicht gültig')
+    end
+
+    it 'allows blank e-mail address' do
+      group.email = '   '
+
+      expect(group).to be_valid
+      expect(group.email).to be_nil
+    end
+
+    it 'does not allow e-mail address with non-existing domain' do
+      group.email = 'group42@gitsäuäniä.it'
+
+      expect(group).not_to be_valid
+      expect(group.errors.messages[:email].first).to eq('ist nicht gültig')
+    end
+
+    it 'does not allow e-mail address with domain without mx record' do
+      group.email = 'dudes@bluewin.com'
+
+      expect(group).not_to be_valid
+      expect(group.errors.messages[:email].first).to eq('ist nicht gültig')
+    end
+
+    it 'does allow valid e-mail address' do
+      group.email = 'group42@puzzle.ch'
+
+      expect(group).to be_valid
     end
   end
 end

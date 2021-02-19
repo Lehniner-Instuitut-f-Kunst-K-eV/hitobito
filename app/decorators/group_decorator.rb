@@ -32,7 +32,7 @@ class GroupDecorator < ApplicationDecorator
   end
 
   def as_quicksearch
-    { id: id, label: label_with_parent, type: :group }
+    { id: id, label: label_with_parent, type: :group, icon: :users }
   end
 
   def label_with_parent
@@ -62,6 +62,10 @@ class GroupDecorator < ApplicationDecorator
       attributes -= model.class.superior_attributes.map(&:to_s)
     end
     attributes
+  end
+
+  def modifiable?(attribute)
+    modifiable_attributes(attribute).each { |_| yield }
   end
 
   def type_name

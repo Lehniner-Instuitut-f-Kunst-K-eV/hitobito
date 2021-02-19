@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-#  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -30,8 +30,8 @@ describe Export::Ics::Events do
     it 'does not fail if contact is set' do
       event.update(contact: people(:top_leader))
 
-      people(:top_leader).phone_numbers.create!(label: 'showme', number: 'Bar', public: true)
-      people(:top_leader).phone_numbers.create!(label: 'notme', number: 'Bar', public: false)
+      people(:top_leader).phone_numbers.create!(label: 'showme', number: '+41 44 123 45 67', public: true)
+      people(:top_leader).phone_numbers.create!(label: 'notme', number: '+41 77 987 65 43', public: false)
 
       is_expected.to all(be_a(Icalendar::Event))
       expect(subject.first.contact.first.value).to eq 'Top Leader'
@@ -54,7 +54,8 @@ describe Export::Ics::Events do
       is_expected.to include(event.description)
       is_expected.to include(contact.person_name)
       is_expected.to include(contact.email)
-      is_expected.to include(Rails.application.routes.url_helpers.event_url(event, host: ENV['RAILS_HOST_NAME']))
+      url = Rails.application.routes.url_helpers.group_event_url(event.groups.first, event, host: ENV['RAILS_HOST_NAME'])
+      is_expected.to include(url)
     end
   end
 
@@ -63,7 +64,7 @@ describe Export::Ics::Events do
 
     context 'with only a start date' do
       let(:event_date) do
-        Event::Date.new(event: event, start_at: Time.zone.local(2018, 5, 19), location: 'testlocation')
+        Event::Date.new(event: event, label: 'Main part', start_at: Time.zone.local(2018, 5, 19), location: 'testlocation')
       end
 
       it do
@@ -72,6 +73,16 @@ describe Export::Ics::Events do
         expect(ical_event.dtend).to be nil
         expect(ical_event.summary.to_s).to eq("#{event.name}: #{event_date.label}")
         expect(ical_event.location.to_s).to eq(event_date.location)
+      end
+    end
+
+    context 'with a date with empty label' do
+      let(:event_date) do
+        Event::Date.new(event: event, start_at: Time.zone.local(2018, 5, 19), location: 'testlocation')
+      end
+
+      it 'omits the empty date label and colon' do
+        expect(ical_event.summary.to_s).to eq("#{event.name}")
       end
     end
 
@@ -86,9 +97,23 @@ describe Export::Ics::Events do
 
       it do
         expect(ical_event.dtstart).to be_a(ical_datetime_klass)
-        expect(ical_event.dtstart.value_ical).to eq(event_date.start_at.strftime(ical_datetime_klass::FORMAT))
+        expect(ical_event.dtstart.value_ical).to eq('20180519T100000Z')
         expect(ical_event.dtend).to be_a(ical_datetime_klass)
-        expect(ical_event.dtend).to eq(event_date.finish_at.strftime(ical_datetime_klass::FORMAT))
+        expect(ical_event.dtend.value_ical).to eq('20180521T140000Z')
+      end
+    end
+
+    context 'with an all-day event' do
+      let(:event_date) do
+        Event::Date.new(
+          event: event,
+          start_at: Time.zone.local(2018, 5, 19, 0, 0),
+          finish_at: Time.zone.local(2018, 5, 21, 0, 0)
+        )
+      end
+
+      it 'should export the non-inclusive end date' do
+        expect(ical_event.dtend.value_ical).to eq((event_date.finish_at + 1.day).strftime(ical_date_klass::FORMAT))
       end
     end
   end

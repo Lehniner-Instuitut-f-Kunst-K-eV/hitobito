@@ -1,0 +1,23 @@
+= entry_form do |f|
+  = f.labeled_input_field :name
+
+  = f.labeled_text_area :redirect_uri, rows: 5,
+    help: raw(t('.help_native_redirect_uris', native_redirect_uri: Doorkeeper.configuration.native_redirect_uri))
+
+  = f.labeled :scopes do
+    - Doorkeeper.configuration.scopes.each do |scope|
+      = f.label("scope_#{scope}", class: 'checkbox') do
+        = check_box_tag("oauth_application[scopes][]",
+                        scope,
+                        entry.scopes.include?(scope),
+                        { id: "oauth_application_scope_#{scope}" })
+        = format_doorkeeper_application_scope(scope).html_safe
+
+  = field_set_tag do
+    = f.labeled :logo do
+      = f.file_field :logo, type: :file, accept: Oauth::LogoUploader.accept_extensions
+
+    - if entry.logo.present?
+      = f.labeled :remove_logo do
+        = f.boolean_field :remove_logo
+

@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+
+#  Copyright (c) 2019-2021, Schweizer Blasmusikverband. This file is part of
+#  hitobito and licensed under the Affero General Public License version 3
+#  or later. See the COPYING file at the top-level directory or at
+#  https://github.com/hitobito/hitobito.
+
+set -euo pipefail
+IFS=$'\n\t'
+
+
+cmd=${1:-'help'}
+wagon_name=${2-'no wagon selected'}
+
+function require_wagon_name() {
+  if [[ $wagon_name = 'no wagon selected' ]]; then
+    echo "you must select a wagon to manage"
+    bin/active_wagon.rb nonexisting
+    exit 1
+  fi
+}
+
+function existing_wagon_names() {
+  find "../" -type d |\
+  sed 's!\.\./hitobito/!!' |\
+  grep 'hitobito_.*/' |\
+  sed 's!../hitobito_!!' |\
+  cut -d/ -f 1 |\
+  grep -v '\.\.' |\
+  uniq
+}
+
+case $cmd in
+  activate)
+    require_wagon_name
+    exec bin/active_wagon.rb "$wagon_name"
+    ;;
+
+  gemfile)
+    bundle check || bundle
+    echo "$WAGONS" | xargs -L1 -d' ' echo | grep -v '^$' | xargs -L1 -I% \
+      cp -v Gemfile.lock "../hitobito_%/"
+    ;;
+
+  configs)
+    echo "$WAGONS" | xargs -L1 -d' ' echo | grep -v '^$' | xargs -L1 -I% \
+      cp -v .rspec .overcommit.yml "../hitobito_%/"
+    echo "$WAGONS" | xargs -L1 -d' ' echo | grep -v '^$' | xargs -L1 -I% \
+      cp -vrf .git-hooks "../hitobito_%/"
+    ;;
+
+  test-prepare)
+    echo 'Running Wagon-Tests to prime the DB'
+    rake wagon:test || true # do not fail, it's more about the setup than the result
+
+    echo 'Changing environment-config'
+    sed -i 's/\(config.active_record.maintain_test_schema\) = true/\1 = false/' config/environments/test.rb
+
+    git diff config/environments/test.rb
+
+    echo 'Running specs with spring in the wagon is now faster.'
+    ;;
+
+  grep)
+    if [[ $# -ne 2 ]]; then
+      echo "You must provide a String to grep"
+      exit 1
+    fi
+    set +e
+
+    # grep in core
+    echo ">> grepping in hitobito <<"
+    git grep "$2"
+
+    # grep in installed wagons
+    for wagon in $(existing_wagon_names); do
+      echo ">> grepping in ../hitobito_$wagon/ <<"
+      (cd "../hitobito_$wagon/"; git grep "$2")
+    done
+    ;;
+
+  core-spec)
+    export WAGONS=''
+    export RAILS_TEST_DB_NAME=hit_core_test
+    shift # loose the "core-spec" argument
+    rspec $@
+    ;;
+
+  completion)
+    cat <<"COMPLETION"
+function __wagon_commands() {
+  echo 'activate gemfile configs test-prepare core-spec grep help'
+}
+
+function __wagon_list() {
+  find "../" -type d |\
+  sed 's!\.\./hitobito/!!' |\
+  grep 'hitobito_.*/' |\
+  sed 's!../hitobito_!!' |\
+  cut -d/ -f 1 |\
+  grep -v '\.\.' |\
+  uniq |\
+  xargs
+}
+
+function __wagon_completion() {
+  program=$1
+  cur=$2
+  prev=$3
+
+  case $prev in
+    wagon)
+      COMPREPLY=( $(compgen -W "$(__wagon_commands)" -- "$cur" ) )
+      return
+      ;;
+
+    activate)
+      COMPREPLY=( $( compgen -W "$(__wagon_list)" -- "$cur" ) )
+      return
+      ;;
+  esac
+}
+
+complete -F __wagon_completion -o default wagon
+COMPLETION
+    ;;
+
+  help|*)
+    echo "USAGE: $0 [activate] <PROJECT>"
+    echo "       $0 [test-prepare|test-core|gemfile|configs]"
+    echo "       $0 [grep] <TERM>"
+    echo
+    echo "Enable bash-completion with \"source <($0 completion)\""
+    ;;
+esac

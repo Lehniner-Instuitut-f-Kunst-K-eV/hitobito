@@ -1,0 +1,75 @@
+.table-responsive {
+  .table {
+    background-color: #fff;
+  }
+
+  width: 100%;
+  padding-bottom: 15px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+  -webkit-overflow-scrolling: touch;
+
+  .table {
+    margin-bottom: 0;
+  }
+}
+
+.table-striped th:first-child {
+  padding-left: 8px;
+}
+
+.table-fixed {
+  table-layout: fixed;
+}
+
+td.action {
+  text-align: center;
+}
+
+table.roles {
+  width: 100%;
+  td {
+    border: none;
+    padding: 0px;
+  }
+  td:first-child { padding-left: 10px; width: 100%; }
+  td { min-width: 20px; }
+}
+
+table.actions-enabled {
+  .multiselect {
+   white-space: nowrap;
+
+    .count, span, .actions {
+      display: inline;
+    }
+
+    .actions {
+      margin-left: 10px;
+      font-weight: normal;
+    }
+  }
+
+  th:first-child input[type='checkbox']{
+    margin-bottom: 12px;
+  }
+}
+
+table tr :first-child input[type='checkbox'] {
+  width: 20px;
+  margin-right: 5px;
+}
+
+table tr.divider, table tr.divider td:hover {
+  background-color: #f9f9f9;
+}
+
+table td.vertical-middle {
+  vertical-align: middle;
+
+  div.btn-group {
+    margin-bottom: 5px;
+    margin-top: 5px;
+  }
+}

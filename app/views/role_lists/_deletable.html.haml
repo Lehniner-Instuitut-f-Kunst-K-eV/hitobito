@@ -1,0 +1,6 @@
+= render 'available', url: group_role_list_path(group),
+  title: t('.title'),
+  method: :delete,
+  people_ids: @people_ids,
+  role_types: @role_types,
+  submit_label: t('.submit')

@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2015, Pfadibewegung Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -36,22 +36,23 @@ class PersonFetchables
 
   def in_same_group_condition(condition)
     if groups_same_group.present?
-      condition.or('groups.id IN (?)', groups_same_group.collect(&:id))
+      condition.or("#{Group.quoted_table_name}.id IN (?)", groups_same_group.collect(&:id))
     end
   end
 
   def in_above_group_condition(condition)
     groups_above_group.each do |group|
-      condition.or('groups.lft >= ? AND groups.rgt <= ? AND groups.layer_group_id = ?',
-                   group.lft,
-                   group.rgt,
+      condition.or("#{Group.quoted_table_name}.lft >= ? AND #{Group.quoted_table_name}.rgt <= ? " \
+                   "AND #{Group.quoted_table_name}.layer_group_id = ?",
+                   group.lft, group.rgt,
                    group.layer_group_id)
     end
   end
 
   def in_same_layer_condition(condition)
     if layer_groups_same_layer.present?
-      condition.or('groups.layer_group_id IN (?)', layer_groups_same_layer.collect(&:id))
+      condition.or("#{Group.quoted_table_name}.layer_group_id IN (?)",
+                   layer_groups_same_layer.collect(&:id))
     end
   end
 
@@ -60,9 +61,9 @@ class PersonFetchables
 
     visible_from_above_groups = OrCondition.new
     collapse_groups_to_highest(layer_groups_above) do |layer_group|
-      visible_from_above_groups.or('groups.lft >= ? AND groups.rgt <= ?',
-                                   layer_group.lft,
-                                   layer_group.rgt)
+      visible_from_above_groups.or("#{Group.quoted_table_name}.lft >= ? " \
+                                   "AND #{Group.quoted_table_name}.rgt <= ?",
+                                   layer_group.lft, layer_group.rgt)
     end
 
     query = "(#{visible_from_above_groups.to_a.first}) AND roles.type IN (?)"

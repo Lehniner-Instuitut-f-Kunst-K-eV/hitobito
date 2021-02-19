@@ -5,10 +5,13 @@
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
 
-class ModifyEventCounts < ActiveRecord::Migration
+class ModifyEventCounts < ActiveRecord::Migration[4.2]
   def change
     rename_column :events, :representative_participant_count, :applicant_count
     add_column :events, :teamer_count, :integer, default: 0
+
+    # let ActiveRecord discover above changes
+    Event.reset_column_information
 
     # Recalculate the counts of all events
     Event.find_each { |e| e.refresh_participant_counts! }

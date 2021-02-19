@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -42,7 +42,7 @@ class Event::ParticipantAssigner
       set_active(false)
       # destroy all other roles when removing a participant
       participation.roles.where.not(type: event.participant_types.collect(&:sti_name)).destroy_all
-      original_event = participation.application.priority_1
+      original_event = participation.application.priority_1 || participation.event
       update_participation_event(original_event)
       original_event.refresh_participant_counts!
     end
@@ -97,11 +97,16 @@ class Event::ParticipantAssigner
   def update_answers
     current_answers = participation.answers.includes(:question)
     event.questions.each do |q|
-      exists = current_answers.any? do |a|
+      existing = current_answers.find do |a|
         a.question.question == q.question &&
-        a.question.choice_items == q.choice_items
+        a.question.choice_items == q.choice_items &&
+        a.question.multiple_choices? == q.multiple_choices?
       end
-      participation.answers.create(question_id: q.id) unless exists
+      if existing
+        existing.update(question: q)
+      else
+        participation.answers.create(question_id: q.id)
+      end
     end
   end
 

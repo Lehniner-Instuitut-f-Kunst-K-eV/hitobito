@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -10,10 +10,11 @@ class EventAbility < AbilityDsl::Base
   include AbilityDsl::Constraints::Event
 
   on(Event) do
-    class_side(:list_available).everybody
+    class_side(:list_available, :typeahead).everybody
 
     permission(:any).may(:show).all
-    permission(:any).may(:index_participations).for_participations_read_events
+    permission(:any).may(:index_participations).
+      for_participations_read_events_and_course_participants
     permission(:any).may(:update).for_leaded_events
     permission(:any).may(:qualify, :qualifications_read).for_qualify_event
 
@@ -61,6 +62,12 @@ class EventAbility < AbilityDsl::Base
     user_context.permission_layer_ids(:layer_and_below_full).include?(Group.root.id)
   end
 
+  def for_participations_read_events_and_course_participants
+    return for_participations_read_events unless subject.is_a?(::Event::Course)
+
+    for_participations_read_events || participant?
+  end
+
   private
 
   def event
@@ -69,6 +76,14 @@ class EventAbility < AbilityDsl::Base
 
   def course_offerers
     @course_offerers ||= Group.course_offerers.pluck(:id)
+  end
+
+  def participant?
+    user.event_participations.
+      select(&:active?).
+      select { |p| p.event == event }.
+      flat_map(&:roles).
+      any? { |r| r.is_a?(Event::Role::Participant) }
   end
 
 end

@@ -4,28 +4,40 @@
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
+
 # == Schema Information
 #
 # Table name: mailing_lists
 #
-#  id                   :integer          not null, primary key
-#  name                 :string(255)      not null
-#  group_id             :integer          not null
-#  description          :text(65535)
-#  publisher            :string(255)
-#  mail_name            :string(255)
-#  additional_sender    :string(255)
-#  subscribable         :boolean          default(FALSE), not null
-#  subscribers_may_post :boolean          default(FALSE), not null
-#  anyone_may_post      :boolean          default(FALSE), not null
-#  delivery_report      :boolean          default(FALSE), not null
-#  preferred_labels     :string(255)
-#  main_email           :boolean          default(FALSE)
+#  id                                  :integer          not null, primary key
+#  additional_sender                   :string(255)
+#  anyone_may_post                     :boolean          default(FALSE), not null
+#  delivery_report                     :boolean          default(FALSE), not null
+#  description                         :text(16777215)
+#  mail_name                           :string(255)
+#  mailchimp_api_key                   :string(255)
+#  mailchimp_include_additional_emails :boolean          default(FALSE)
+#  mailchimp_last_synced_at            :datetime
+#  mailchimp_result                    :text(16777215)
+#  mailchimp_syncing                   :boolean          default(FALSE)
+#  main_email                          :boolean          default(FALSE)
+#  name                                :string(255)      not null
+#  preferred_labels                    :string(255)
+#  publisher                           :string(255)
+#  subscribable                        :boolean          default(FALSE), not null
+#  subscribers_may_post                :boolean          default(FALSE), not null
+#  group_id                            :integer          not null
+#  mailchimp_list_id                   :string(255)
+#
+# Indexes
+#
+#  index_mailing_lists_on_group_id  (group_id)
 #
 
 class MailingList < ActiveRecord::Base
 
   serialize :preferred_labels, Array
+  attribute :mailchimp_result, Synchronize::Mailchimp::ResultType.new
 
   belongs_to :group
 
@@ -37,7 +49,7 @@ class MailingList < ActiveRecord::Base
            class_name: 'Person::AddRequest::MailingList',
            dependent: :destroy
 
-  has_many :mail_logs, dependent: :nullify
+  has_many :messages, dependent: :nullify
 
   validates_by_schema
   validates :mail_name, uniqueness: { case_sensitive: false },
@@ -49,6 +61,14 @@ class MailingList < ActiveRecord::Base
       allow_blank: true,
       format: /\A *(([a-z][a-z0-9\-\_\.]*|\*)@([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,} *(,|;|\Z) *)+\Z/
 
+  after_destroy :schedule_mailchimp_destroy, if: :mailchimp?
+
+  scope :list, -> { order(:name) }
+  scope :subscribable, -> { where(subscribable: true) }
+  scope :mailchimp, -> do
+    where.not(mailchimp_api_key: ['', nil]).where.not( mailchimp_list_id: ['', nil])
+  end
+
   DEFAULT_LABEL = '_main'.freeze
 
   def to_s(_format = :default)
@@ -57,6 +77,10 @@ class MailingList < ActiveRecord::Base
 
   def labels
     main_email ? preferred_labels + [DEFAULT_LABEL] : preferred_labels
+  end
+
+  def mailchimp?
+    [mailchimp_api_key, mailchimp_list_id].all?(&:present?)
   end
 
   def preferred_labels=(labels)
@@ -90,82 +114,18 @@ class MailingList < ActiveRecord::Base
   end
 
   def people(people_scope = Person.only_public_data)
-    people_scope.
-      joins(people_joins).
-      joins(subscription_joins).
-      where(subscriptions: { mailing_list_id: id }).
-      where("people.id NOT IN (#{excluded_person_subscribers.to_sql})").
-      where(suscriber_conditions).
-      uniq
+    MailingList::Subscribers.new(self, people_scope).people
+  end
+
+  def sync
+    Synchronize::Mailchimp::Synchronizator.new(self).perform
+  end
+
+  def mailchimp_client
+    Synchronize::Mailchimp::Client.new(self)
   end
 
   private
-
-  def people_joins
-    <<-SQL.strip_heredoc.split.map(&:strip).join(' ')
-      LEFT JOIN roles ON people.id = roles.person_id
-      LEFT JOIN groups ON roles.group_id = groups.id
-      LEFT JOIN event_participations ON event_participations.person_id = people.id
-      LEFT JOIN taggings AS people_taggings
-        ON people_taggings.taggable_type = 'Person'
-        AND people_taggings.taggable_id = people.id
-    SQL
-  end
-
-  def subscription_joins
-    # the comma is needed because it is not a JOIN, but a second "FROM"
-    <<-SQL.strip_heredoc.split.map(&:strip).join(' ')
-      , subscriptions
-      LEFT JOIN groups sub_groups
-        ON subscriptions.subscriber_type = 'Group' AND subscriptions.subscriber_id = sub_groups.id
-      LEFT JOIN related_role_types
-        ON related_role_types.relation_type = 'Subscription' AND related_role_types.relation_id = subscriptions.id
-      LEFT JOIN taggings AS subscriptions_taggings
-        ON subscriptions_taggings.taggable_type = 'Subscription' AND subscriptions_taggings.taggable_id = subscriptions.id
-    SQL
-  end
-
-  def suscriber_conditions
-    condition = OrCondition.new
-    person_subscribers(condition)
-    event_subscribers(condition)
-    group_subscribers(condition)
-    condition.to_a
-  end
-
-  def person_subscribers(condition)
-    condition.or('subscriptions.subscriber_type = ? AND ' \
-                 'subscriptions.excluded = ? AND ' \
-                 'subscriptions.subscriber_id = people.id',
-                 Person.sti_name,
-                 false)
-  end
-
-  def excluded_person_subscribers
-    Subscription.select(:subscriber_id).
-      where(mailing_list_id: id,
-            excluded: true,
-            subscriber_type: Person.sti_name)
-  end
-
-  def group_subscribers(condition)
-    condition.or('subscriptions.subscriber_type = ? AND ' \
-                 'subscriptions.subscriber_id = sub_groups.id AND ' \
-                 'groups.lft >= sub_groups.lft AND groups.rgt <= sub_groups.rgt AND ' \
-                 'roles.type = related_role_types.role_type AND ' \
-                 'roles.deleted_at IS NULL AND ' \
-                 '(subscriptions_taggings.tag_id IS NULL OR ' \
-                 ' people_taggings.tag_id = subscriptions_taggings.tag_id)',
-                 Group.sti_name)
-  end
-
-  def event_subscribers(condition)
-    condition.or('subscriptions.subscriber_type = ? AND ' \
-                 'subscriptions.subscriber_id = event_participations.event_id AND ' \
-                 'event_participations.active = ?',
-                 Event.sti_name,
-                 true)
-  end
 
   def assert_mail_name_is_not_protected
     if mail_name? && application_retriever_name
@@ -179,4 +139,9 @@ class MailingList < ActiveRecord::Base
     config = Settings.email.retriever.config
     config.presence && config.user_name.presence
   end
+
+  def schedule_mailchimp_destroy
+    MailchimpDestructionJob.new(mailchimp_list_id, mailchimp_api_key, people).enqueue!
+  end
+
 end

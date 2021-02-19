@@ -1,5 +1,3 @@
-# encoding: utf-8
-
 #  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
@@ -9,7 +7,7 @@ class GroupAbility < AbilityDsl::Base
 
   include AbilityDsl::Constraints::Group
 
-  on(Group) do
+  on(Group) do # rubocop:disable Metrics/BlockLength
     permission(:any).may(:read, :index_events, :'index_event/courses', :index_mailing_lists).all
     permission(:any).may(:deleted_subgroups).if_member
 
@@ -43,7 +41,7 @@ class GroupAbility < AbilityDsl::Base
     permission(:layer_full).
       may(:update, :reactivate, :index_person_add_requests, :index_notes,
           :manage_person_tags, :activate_person_add_requests, :deactivate_person_add_requests,
-          :index_deleted_people).
+          :index_deleted_people, :index_service_tokens).
       in_same_layer
 
     permission(:layer_and_below_read).
@@ -56,21 +54,27 @@ class GroupAbility < AbilityDsl::Base
     permission(:layer_and_below_full).may(:destroy).in_same_layer_or_below_except_permission_giving
     permission(:layer_and_below_full).
       may(:update, :reactivate, :index_person_add_requests, :index_notes,
-          :manage_person_tags, :index_deleted_people).
-      in_same_layer_or_below
+          :manage_person_tags, :index_deleted_people).in_same_layer_or_below
     permission(:layer_and_below_full).may(:modify_superior).in_below_layers
     permission(:layer_and_below_full).
-      may(:activate_person_add_requests, :deactivate_person_add_requests).
+      may(:activate_person_add_requests, :deactivate_person_add_requests, :index_service_tokens).
       in_same_layer
 
     permission(:finance).may(:index_invoices).in_layer_group
     permission(:finance).may(:create_invoices_from_list).in_same_layer_or_below
+
+    permission(:admin).may(:manage_person_duplicates).if_layer_group
+    permission(:layer_and_below_full).may(:manage_person_duplicates).if_permission_in_layer
 
     general(:update).group_not_deleted
     general(:index_person_add_requests,
             :activate_person_add_requests,
             :deactivate_person_add_requests).
       if_layer_group
+  end
+
+  def if_permission_in_layer
+    group.layer? && permission_in_layer?(group.id)
   end
 
   def in_layer_group

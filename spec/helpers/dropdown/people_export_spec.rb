@@ -8,6 +8,8 @@
 require 'spec_helper'
 
 describe 'Dropdown::PeopleExport' do
+  include Rails.application.routes.url_helpers
+
 
   include FormatHelper
   include LayoutHelper
@@ -43,6 +45,9 @@ describe 'Dropdown::PeopleExport' do
     end
     is_expected.to have_selector 'a' do |tag|
       expect(tag).to have_content 'vCard'
+    end
+    is_expected.to have_selector 'a' do |tag|
+      expect(tag).to have_content 'MailChimp'
     end
     is_expected.to have_selector 'a' do |tag|
       expect(tag).to have_content 'E-Mail Adressen'

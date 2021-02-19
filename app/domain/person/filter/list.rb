@@ -15,18 +15,27 @@ class Person::Filter::List
     @chain = Person::Filter::Chain.new(params[:filters])
     @range = params[:range]
     @name = params[:name]
+    @ids = params[:ids].to_s.split(',')
   end
 
   def entries
-    default_order(filtered_accessibles.preload_groups)
+    default_order(filtered_accessibles.preload_groups.distinct)
   end
 
   def filtered_accessibles
-    filter.where(id: accessibles.unscope(:select).select(:id)).uniq
+    return filter unless user
+
+    if group_range?
+      filtered = filter.unscope(:select).select(:id).distinct
+      filtered = filtered.where(id: @ids) if @ids.present?
+      accessibles.unscope(:select).where(id: filtered)
+    else
+      accessibles.merge(filter)
+    end
   end
 
   def all_count
-    @all_count ||= filter.uniq.count
+    @all_count ||= filter.distinct.count
   end
 
   private
@@ -36,7 +45,7 @@ class Person::Filter::List
   end
 
   def accessibles
-    ability = accessibles_class.new(user, nil)
+    ability = accessibles_class.new(user, group_range? ? @group : nil, chain.roles_join)
     Person.accessible_by(ability)
   end
 
@@ -58,12 +67,9 @@ class Person::Filter::List
       @multiple_groups = true
       Person.in_layer(group, join: chain.roles_join)
     else
+      group_scope = Person.in_group(group, chain.roles_join)
       chain.blank? ? group_scope.members(group) : group_scope
     end
-  end
-
-  def group_scope
-    Person.in_group(group, chain.roles_join)
   end
 
   def group_range?

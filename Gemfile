@@ -1,101 +1,101 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
 
 source 'https://rubygems.org'
 
-gem 'rails', '4.2.8'
+gem 'rails', '= 6.0.3.4'
 
 gem 'activerecord-session_store'
-gem 'acts-as-taggable-on', '~> 3.5.0'
-gem 'airbrake', '< 5.0' # requires newer errbit
-gem 'awesome_nested_set', '< 3.1.0' # requires ruby 2.0
+gem 'acts-as-taggable-on'
+gem 'airbrake'
+gem 'awesome_nested_set'
 gem 'axlsx', '>= 3.0.0.pre'
-gem 'bcrypt-ruby'
-gem 'cancancan', '< 1.13.0' # requires ruby 2.0
-gem 'carrierwave', '< 0.11.1' # uses 2.0 for testing (no explicit requirement, yet)
+gem 'bcrypt'
+gem 'bleib', '~> 0.0.10'
+gem 'bootsnap', require: false
+gem 'cancancan'
+gem 'carrierwave'
 gem 'cmess'
-gem 'config', '< 1.1.0' # requires ruby 2
+gem 'config'
 gem 'country_select'
-gem 'customized_piwik_analytics', '~> 1.0.0'
 gem 'daemons'
 gem 'dalli'
 gem 'delayed_job_active_record'
-gem 'devise', '< 4.0.0' # requires ruby 2.1
+gem 'delayed_job_heartbeat_plugin'
+gem 'devise'
+gem 'doorkeeper'
+gem 'doorkeeper-i18n'
+gem 'doorkeeper-openid_connect'
 gem 'draper'
-gem 'faker', '< 1.6.4' # uses 2.0 for testing (no explicit requirement, yet)
+gem 'draper-cancancan'
+gem 'faker'
+gem 'faraday'
+gem 'gibbon', '~> 3.2'
 gem 'globalize'
 gem 'haml'
 gem 'http_accept_language'
 gem 'icalendar'
+gem 'image_processing', '~> 1.2'
+gem 'ledermann-rails-settings'
+gem 'lograge'
+gem 'lograge_activejob'
+gem 'lograge-sql'
 gem 'magiclabs-userstamp', require: 'userstamp'
-gem 'mime-types', '~> 2.6.2' # newer requires ruby 2.0
+gem 'mime-types'
 gem 'mini_magick'
-gem 'mysql2', '0.4.9'
+gem 'mysql2'
 gem 'nested_form'
+gem 'nokogiri'
 gem 'oat'
 gem 'paper_trail'
-gem 'paranoia', '< 2.1.2' # uses 2.0 for testing (no explicit requirement, yet)
-gem 'prawn', '< 2.0' # 2.0 requires ruby 2.0
+gem 'paranoia'
+gem 'phonelib'
+gem 'prawn'
+gem 'prawn-markup'
 gem 'prawn-table'
+gem 'prometheus_exporter'
 gem 'protective'
-gem 'rails-i18n'
+gem 'pry-rails'
+gem 'puma'
 gem 'rails_autolink'
-gem 'rubyzip', '~> 1.2.2'
+gem 'rails-i18n'
+gem 'remotipart'
+gem 'rest-client'
+gem 'rqrcode'
+gem 'rubyzip', '~> 1.3.0'
 gem 'seed-fu'
+gem 'sentry-raven'
 gem 'simpleidn'
-gem 'sqlite3' # for development, test and production when generating assets
+gem 'sprockets', '~> 3.7.2' # pinned to older version to avoid having an empty manifest.js
+gem 'sqlite3' # required for asset generation
 gem 'thinking-sphinx'
+gem 'truemail'
 gem 'validates_by_schema'
 gem 'validates_timeliness', '< 4.0'
 gem 'vcard'
-gem 'wagons'
+gem 'wagons', '0.6.1'
+gem 'webpacker'
 
 # load after others because of active record inherited alias chain.
-gem 'kaminari', '< 1.0.0' # requires ruby 2.0
-
-# Gems used only for assets
-gem 'bootstrap-sass', '~> 2.3'
-gem 'bootstrap-wysihtml5-rails', '~> 0.3.1.24'
-gem 'chosen-rails'
-gem 'coffee-rails'
-gem 'compass'
-gem 'compass-rails'
-gem 'font-awesome-rails', '~> 4.7', '>= 4.7.0.1'
-gem 'jquery-cookie-rails'
-gem 'jquery-rails'
-gem 'jquery-turbolinks'
-gem 'jquery-ui-rails'
-gem 'remotipart'
-gem 'sass-rails'
-gem 'therubyracer', platforms: :ruby
-gem 'turbolinks'
-gem 'uglifier'
-
-# security updates, can be deleted or changed if they get in the way of updates or so
-gem 'loofah', '~> 2.2.3'
-gem 'rack', '~> 1.6.11'
-gem 'sprockets', '~> 3.7.2'
-
+gem 'kaminari'
 
 group :development, :test do
+  gem 'better_errors'
   gem 'binding_of_caller'
   gem 'codez-tarantula', require: 'tarantula-rails3'
   gem 'parallel_tests'
-  gem 'pry-rails'
-  gem 'rspec-rails'
-
-  gem 'pry-debugger', platforms: :ruby_19
+  gem 'pry-byebug'
   gem 'pry-doc'
-  # gem 'pry-byebug', platforms: [:ruby_20, :ruby_21]
+  gem 'rspec-rails', '4.0.0.beta3' # see https://github.com/rspec/rspec-rails/issues/2177
 end
 
 group :development do
   gem 'bullet'
-  gem 'quiet_assets'
+  gem 'listen'
   gem 'redcarpet'
   gem 'request_profiler'
 end
@@ -108,15 +108,17 @@ group :test do
   gem 'headless'
   gem 'launchy'
   gem 'pdf-inspector', require: 'pdf/inspector'
+  gem 'rails-controller-testing'
   gem 'rspec-collection_matchers'
   gem 'rspec-its'
   gem 'selenium-webdriver'
+  gem 'webdrivers'
+  gem 'webmock'
 end
 
 group :console do
   gem 'awesome_print'
   gem 'hirb'
-  gem 'mailcatcher'
   gem 'pry-remote'
   gem 'pry-stack_explorer'
   gem 'rdoc-tags'
@@ -131,13 +133,13 @@ group :metrics do
   gem 'rails-erd'
   gem 'rubocop'
   gem 'rubocop-checkstyle_formatter'
+  gem 'rubocop-rails'
   gem 'ruby-prof'
-  gem 'simplecov-rcov'
 end
 
 # Include the wagon gems you want attached in Wagonfile.
 # Do not check Wagonfile into source control.
 #
 # To create a Wagonfile suitable for development, run 'rake wagon:file'
-wagonfile = File.expand_path('../Wagonfile', __FILE__)
+wagonfile = File.expand_path('Wagonfile', __dir__)
 eval(File.read(wagonfile)) if File.exist?(wagonfile) # rubocop:disable Security/Eval

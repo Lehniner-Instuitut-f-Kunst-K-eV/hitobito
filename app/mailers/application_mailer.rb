@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -22,7 +22,7 @@ class ApplicationMailer < ActionMailer::Base
 
   def compose(recipients, content_key)
     values = values_for_placeholders(content_key)
-    custom_content_mail(recipients, content_key, values)
+    custom_content_mail(recipients, content_key, values) if recipients.present?
   end
 
   # TODO: deprecate/remove values-parameter and call values_for_placeholders instead
@@ -31,14 +31,14 @@ class ApplicationMailer < ActionMailer::Base
     headers[:to] = use_mailing_emails(recipients)
     headers[:subject] ||= content.subject_with_values(values)
     mail(headers) do |format|
-      format.html { render text: content.body_with_values(values) }
+      format.html { render plain: content.body_with_values(values) }
     end
   end
 
   def values_for_placeholders(content_key)
     content = CustomContent.get(content_key)
-    content.placeholders_list.each_with_object({}) do |token, hash|
-      hash[token] = send(:"placeholder_#{token.underscore}")
+    content.placeholders_list.index_with do |token|
+      send(:"placeholder_#{token.underscore}")
     end
   end
 

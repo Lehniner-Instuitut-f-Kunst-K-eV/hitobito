@@ -15,7 +15,6 @@ fr:
         delimiter: ''''
         format: '%u %n'
         separator: .
-        unit: CHF
     format:
       delimiter: ''''
       separator: .
@@ -52,18 +51,17 @@ fr:
           attributes:
             choices:
               requires_more_than_one_choice: 'doit au moins contenir deux réponses'
+              requires_exactly_one_choice: 'doit contenir exactement une réponse'
         event/participation:
-          emoji_suspected: 'Prière de ne pas utiliser de caractères spéciaux (en particulier, des emoji)'
           attributes:
             person_id:
               taken: est déjà annoncé
-        mailing_list:
+        oauth/application:
           attributes:
-            mail_name:
-              not_allowed: "'%{mail_name}' ne peut pas être utilisé"
+            scopes:
+              not_match_configured: "ne correspondent pas à celles du serveur."
         person:
           name_missing: 'Veuillez entrer votre nom'
-          emoji_suspected: 'Prière de ne pas utiliser de caractères spéciaux (en particulier, des emoji)'
           readonly: ": Tu n'as pas les droits d'écriture pour toutes les personnes du foyer. Sors %{name} du foyer pour ajuster l'adresse."
           attributes:
             email:
@@ -89,7 +87,7 @@ fr:
         qualification_kind:
           attributes:
             validity:
-              not_a_positive_number: 'doit être un nombre positif afin de pouvoir réactiver le %{model}'
+              not_a_valid_number: 'doit être supérieur ou égal à zéro pour pouvoir être réactivé'
         subscription:
           attributes:
             subscriber_id:
@@ -99,6 +97,24 @@ fr:
           attributes:
             name:
               must_be_unique: 'existe déjà'
+        invoice:
+          recipient_address_or_email_required: 'l''adresse ou l''e-mail du destinataire doit être remplie'
+          attributes:
+            invoice_config:
+              invalid: 'n''est pas valable ; adaptez les réglages avant de faire le calcul'
+        invoice_config:
+          attributes:
+            iban:
+              required: 'doit être rempli'
+            account_number:
+              required: 'doit être rempli'
+              invalid_check_digit: 'n''est pas valable ; code de vérification incorrect'
+            payee:
+              to_long: 'doit contenir 2 lignes au maximum'
+        mailing_list:
+          attributes:
+            additional_sender:
+              invalid: "doit contenir des adresses e-mail au format abcd@ee.ch ou *@ee.ch. Multiples adresses doivent être séparées par ',' ou ';'."
     models:
       acts_as_taggable_on/tag:
         one: Tag
@@ -109,6 +125,9 @@ fr:
       custom_content:
         one: Texte
         other: Textes
+      dispatch:
+        one: Envoi
+        other: Envoi
       event:
         one: activité
         other: Activités
@@ -127,6 +146,9 @@ fr:
       event/kind:
         one: Type de cours
         other: Types de cours
+      event/role:
+        one: rôles de l'évènement
+        other: rôles de l'évènement
       event/role/assistant_leader:
         one: Responsable
         other: Responsables
@@ -154,21 +176,60 @@ fr:
       group:
         one: groupe
         other: Groupes
+      group_setting:
+        one: Paramètre
+        other: Paramètres
+      help_text:
+        one: Hilfetext
+        other: Textes d'aide
+      invoice:
+        one: facture
+        other: Factures
+      invoice_article:
+        one: articles de factures
+        other: Articles à facturer
+      invoice_config:
+        one: Paramétrage
+        other: Paramétrage
+      invoice_item:
+        one: postes de factures
+        other: Détails de la facture
       label_format:
         one: format d'étiquette
         other: Formats d'étiquettes
+      mail_log:
+        one: Historique
+        other: Historique
       mailing_list:
         one: abonnement
         other: Abonnements
       note:
         one: Note
         other: Notes
+      payment:
+        one: paiements
+        other: paiements
+      oauth/application:
+        one: Application OAuth
+        other: Applications OAuth
+      oauth/access_token:
+        one: Token d'accès OAuth
+        other: Tokens d'accès OAuth
+      oauth/access_grant:
+        one: Autorisation OAuth
+        other: Autorisations OAuth
+      payment_reminder:
+        one: rappel
+        other: rappels
       person:
         one: Personne
         other: Personnes
       person/add_request:
         one: Question
         other: Questions
+      person_duplicate:
+        one: Duplicata
+        other: Duplicatas
       people_filter:
         one: Filtre
         other: Filtres
@@ -187,15 +248,19 @@ fr:
       role:
         one: Rôle
         other: Rôles
+      service_token:
+        one: API-Key
+        other: API-Keys
       social_account:
         one: Adresse d'un média social
         other: Adresses de réseaux sociaux
       subscription:
         one: abonné
         other: Abonnés
+      tag:
+        one: Tag
+        other: Tags
     attributes:
-      acts_as_taggable_on/tag:
-        name: Nom
       cantons:
         ag: Argovie
         ai: Appenzell Rhodes Intérieures
@@ -245,7 +310,7 @@ fr:
           m: Masculin
           w: Féminin
           _nil: Inconnu
-        birthday: Anniversaire
+        birthday: Date de naissance
         additional_information: Données supplémentaires
         remember_me: Se souvenir de moi
         relations_to_tails: relations
@@ -258,6 +323,10 @@ fr:
         tags: Tags
         created_at: Créé
         updated_at: Modifié
+      person_duplicate:
+        birth_year: Année
+        roles_list: Rôles
+        person_name: Prénom / Nom / Totem
       person/add_request:
         person: Personne
         requester: Question de
@@ -286,13 +355,14 @@ fr:
         layer_group_id: Niveau
         type: Type de groupe
         type_name: Type de groupe
+        description: Description
       event:
         group_ids: Groupes
         groups: Groupes
         state: Statut
         name: Nom
         number: Numéro
-        motto: Devise
+        motto: Thème
         cost: Coûts
         contact: ' Personne de contact '
         maximum_participants: Nombre maximal de participants
@@ -300,11 +370,11 @@ fr:
         description: Description
         location: Lieu / Adresse
         application_opening_at: Début des inscriptions
-        application_closing_at: Fin des inscriptions
-        application_conditions: Conditions d'admission
+        application_closing_at: Délai d'inscription
+        application_conditions: Conditions d'inscription
         external_applications: Inscriptions externes
-        signature: Signature nécessaire
-        signature_confirmation: 2ème signature nécessaire
+        signature: Signature obligatoire
+        signature_confirmation: Deuxième signature obligatoire
         signature_confirmation_text: Deuxième signature de
         dates: Dates
         dates_full: Dates
@@ -316,6 +386,8 @@ fr:
         applicant_count: Nombre d'inscriptions
         applications_cancelable: Désinscription possible
         display_booking_info: Voir l'état des inscriptions
+        participations_visible: Visibilité des participants
+        waiting_list: Liste d'attente
       event/contact_attrs:
         required: Obligatoire
         optional: Optionnel
@@ -355,16 +427,16 @@ fr:
         prolongations: Prolongé
         qualification_kinds: Qualifié pour
         general_information: Informations générales
-        application_conditions: Conditions d'admission
+        application_conditions: Conditions d'inscription
         created_at: Créé
         updated_at: Modifié
         deleted_at: Supprimé
       event/participation:
         person_id: Personne
         event_id: Evénement
-        additional_information: Commentaires (généralités, informations en lien avec la santé, allergies, etc.)
+        additional_information: Commentaires
         answers: Questions
-        created_at: date d'inscription
+        created_at: Date d'inscription
         roles: rôle
       event/question:
         question: Question
@@ -388,6 +460,16 @@ fr:
         participation: Personne
       note:
         text: Texte
+      oauth/application:
+        redirect_uri: Rediriger les URIs
+      people_relation:
+        head_id: Personne
+        tail_id: Autre personne
+        kind: genre
+      phone_number:
+        number: Numéro
+        label: Type
+        public: Public
       qualification:
         qualification_kind: Qualification
         qualification_kind_id: Qualification
@@ -405,17 +487,9 @@ fr:
         updated_at: Modifié
         deleted_at: Supprimé
         reactivateable: Pouvant être réactivé
-      people_relation:
-        head_id: Personne
-        tail_id: Autre personne
-        kind: genre
       relations_to_tails:
         tail_id: relation
         kind: genre
-      phone_number:
-        number: Numéro
-        label: Type
-        public: Public
       phone_numbers:
         number: Numéro de téléphone
         label: Type de numéro de téléphone
@@ -442,6 +516,7 @@ fr:
               contact_data: Lecture des données de contact de toutes les autres personnes avec des droits de données de contact.
               qualify: Saisie de qualifications pour les personnes à ce niveau et aux niveaux inférieurs.
               approve_applications: Confirmation des inscriptions aux cours pour les personnes de ce niveau.
+              finance: création et gestion de factures
               impersonation: Se servir de hitobito comme autre personne.
           kind:
             member:
@@ -490,10 +565,32 @@ fr:
         subscribable: Les abonnés peuvent s'inscrire / se désinscrire eux-même
         mail_name: Adresse de la liste de diffusion
         mail_address: Liste de diffusion
+        mail_address_link: Liste de diffusion
         subscribers_may_post: les abonnés peuvent éditer la liste de diffusion
         additional_sender: Expéditeur supplémentaire
         preferred_labels: Labels d'e-mail privilégiés
         main_email: Envoi à l'adresse e-mail principale
+        mailchimp_api_key: 'MailChimp API-Key'
+        mailchimp_list_id: 'MailChimp List-ID'
+        mailchimp_sync: 'MailChimp Sync'
+        mailchimp_state: 'Statut de Mailchimp'
+        mailchimp_states:
+          unchanged: Inchangé
+          success: Mise à jour
+          partial: En partie
+          failed: Echoué
+        mailchimp_include_additional_emails: 'Synchroniser toutes adresses d''envoi'
+      mail_log:
+        updated_at: Réalisé le
+        mail_from: Expéditeur
+        mail_subject: Objet
+        status: Statut
+        statuses:
+          retreived: En cours d'envoi
+          bulk_delivering: En cours d'envoi
+          completed: Envoyé
+          sender_rejected: Expéditeur refusé
+          unkown_recipient: Erreur
       subscription:
         related_role_types: Rôles
       people_filter:
@@ -502,6 +599,16 @@ fr:
         label: Texte
         subject: Objet
         body: Contenu
+      help_text:
+        context: Contexte
+        key: Clef
+        body: Contenu
+        field:
+          one: Champ
+          other: Champs
+        action:
+          one: Page
+          other: Pages
       label_format:
         name: Désignation
         page_size: Taille de la page
@@ -516,8 +623,152 @@ fr:
         dimensions: Nombre
         nickname: Surnom sur l'étiquette
         pp_post: Espace PP
+      invoice:
+        currency: Devise
+        title: titre
+        description: Texte
+        invoice_items: Détails de la facture
+        invoice_item_article: Article à facturer
+        invoice_config: Paramétrage
+        state: statut
+        sequence_number: numéro
+        esr_number: numéro de référence
+        amount_paid: total payé
+        payment_slips:
+          ch_es: Bulletin de versement postal rouge (CH)
+          ch_bes: Bulletin de versement bancaire rouge (CH)
+          ch_esr: Bulletin de versement postal orange (CH)
+          ch_besr: Bulletin de versement bancaire orange (CH)
+          no_ps: Aucun
+          qr: Facture QR
+        states:
+          draft: projet
+          issued: Établie
+          sent: Envoyé par courriel
+          payed: payé
+          reminded: Rappel envoyé
+          cancelled: annulé
+        recipient: destinataire
+        recipient_email: e-mail du destinataire
+        recipient_address: adresse du destinataire
+        due_at: Échu(e) le
+        issued_at: Établi(e) le
+        sent_at: Envoyé(e) le
+        cost: montant
+        total_inkl_vat: Montant total
+        total: Total (TVA incl.)
+        vat: TVA
+        vat_number: N° TVA
+        payment_information: Information sur le paiement
+        payment_purpose: motif du paiement
+        address: adresse de l'expéditeur
+        beneficiary: en faveur de
+        payee: 'Nom / Entreprise '
+        account_number: numéro de compte
+        iban: IBAN
+        payment_slip: bulletin de versement
+        participant_number: numéro du participant
+        creator: Auteur de la facture
+        cost_centers: Postes
+        accounts: Comptes
+        payments: Encaissements
+      invoice_article:
+        number: numéro d'article
+        name: désignation
+        description: description
+        category: catégorie
+        unit_cost: prix
+        vat_rate: TVA
+        cost_center: centre de coûts
+        account: Compte
+      invoice_config:
+        currency: Devise
+        payment_information: Information sur le paiement
+        address: adresse de l'expéditeur
+        account_number: numéro de compte
+        iban: IBAN
+        due_days: Payable à (jours)
+        contact: personne de contact
+        contact_id: ' personne de contact '
+        beneficiary: en faveur de
+        email: E-mail de l'expéditeur
+        payee: Paiement à
+        payment_slip: bulletin de versement
+        payment_slips:
+          qr: Facture QR
+          ch_es: Bulletin de versement postal rouge (CH)
+          ch_bes: Bulletin de versement bancaire rouge (CH)
+          ch_esr: Bulletin de versement postal orange (CH)
+          ch_besr: Bulletin de versement bancaire orange (CH)
+          no_ps: Aucun
+        participant_number: numéro du participant
+        participant_number_internal: Numéro du participant interne
+        payment_reminder_configs: rappels
+        vat_number: N° TVA
+      invoice_item:
+        name: Désignation
+        description: description
+        vat_rate: TVA
+        unit_cost: prix
+        count: Quantité
+        cost: montant
+        cost_center: Poste
+        account: Compte
+      invoice_list:
+        receiver: destinataire
+      invoice_items:
+        name: Nom
+        description: description
+        vat_rate: TVA
+        unit_cost: prix
+        count: nombre
+        cost: montant
+        cost_center: Poste
+        account: Compte
+      payment:
+        invoice: facture
+        amount: montant
+        received_at: Date de réception
+        reference: référence de paiement
+      payment_reminder:
+        invoice: facture
+        message: information
+        due_at: Échu(e) le
+      payment_reminder_config:
+        title: titre
+        text: texte
+        due_days: Payable à (jours)
+      payment_reminder_configs:
+        title: titre du rappel
+        text: texte du rappel
+        due_days: durée d'échéance du rappel
+      service_token:
+        name: Nom
+        description: Description
+        key: Clé
+        abilities: Droits
+        last_access: Dernier accès
+        people: Membres de ce niveau
+        people_below: Membres de ce niveau et des niveaux inférieurs
+        groups: Groupes de ce niveau et des niveaux inférieurs
+        events: Évènements de ce niveau et des niveaux inférieurs
+        invoices: Factures de ce niveau
+        event_participations: Participants d'évènements de ce niveau
+        mailing_lists: Abonné-e-s des mailing listes de ce niveau
+      acts_as_taggable_on/tag:
+        taggings_count: Nombre
+        category: catégorie
+        name: Nom
+  doorkeeper:
+    scopes:
+      email: Lecture de ton adresse e-mail
+      name: Lecture de ton adresse e-mail et de ton nom
+      with_roles: Lecture de tes données de base et rôles
+      openid: Lecture de ton Token d'identité OIDC
+      api: Lecture de toutes les personnes, groupes, événements et factures auxquels vous avez accès, via les interfaces JSON
   errors:
     messages:
+      invalid_money: "doit être arrondi à 5 centimes"
       invalid_date: "n'est pas une date valable"
       invalid_time: "n'est pas une heure valable"
       invalid_datetime: "n'est pas une date valable"
@@ -526,7 +777,7 @@ fr:
       on_or_before: "doit être %{restriction} ou antérieur"
       after: "doit être ultérieur à %{restriction}"
       on_or_after: "doit être %{restriction} ou ultérieur"
-      extension_white_list_error: "n'accepte que les types de fichiers suivants: %{allowed_types}"
+      extension_whitelist_error: "n'accepte que les types de données suivants : %{allowed_types}"
       dimensions_too_large: "n'accepte que les images d'une taille de moins de %{maximum} pixels"
       filesize_too_large: "ne peut pas faire plus de %{maximum} MB"
       expired: "est échu, prière d'en refaire demande"

@@ -16,7 +16,7 @@ class PersonDecorator < ApplicationDecorator
   end
 
   def as_quicksearch
-    { id: id, label: h.h(full_label), type: :person }
+    { id: id, label: h.h(full_label), type: :person, icon: :user }
   end
 
   def as_typeahead_with_address
@@ -33,6 +33,10 @@ class PersonDecorator < ApplicationDecorator
       label << " (#{birthday.year})" if birthday
     end
     label
+  end
+
+  def birth_year
+    birthday.year if birthday.present?
   end
 
   def name_with_address
@@ -71,10 +75,14 @@ class PersonDecorator < ApplicationDecorator
     h.link_to(group, h.group_path(group)) if group
   end
 
+  def roles_list(group = nil)
+    roles_short(group, edit: false)
+  end
+
   # render a list of all roles
   # if a group is given, only render the roles of this group
-  def roles_short(group = nil)
-    functions_short(filtered_roles(group), group)
+  def roles_short(group = nil, edit: true)
+    functions_short(filtered_roles(group), scope: group, edit: edit)
   end
 
   def filtered_roles(group = nil)
@@ -153,16 +161,16 @@ class PersonDecorator < ApplicationDecorator
     end
   end
 
-  def functions_short(functions, scope = nil)
+  def functions_short(functions, scope: nil, edit: true)
     h.safe_join(functions) do |f|
-      content_tag(:p, function_short(f, scope), id: h.dom_id(f))
+      content_tag(:p, function_short(f, scope: scope, edit: edit), id: h.dom_id(f))
     end
   end
 
-  def function_short(function, scope = nil)
+  def function_short(function, scope: nil, edit: true)
     html = [function.to_s]
     html << h.muted(h.safe_join(function.group.with_layer, ' / ')) if scope.nil?
-    html << popover_edit_link(function) if h.can?(:update, function)
+    html << popover_edit_link(function) if edit && h.can?(:update, function)
     h.safe_join(html, ' ')
   end
 

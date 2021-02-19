@@ -35,13 +35,6 @@ module UtilityHelper
     object_class(entry).model_name.human
   end
 
-  def include_wysiwyg_assets
-    content_for(:head) do
-      stylesheet_link_tag('wysiwyg.css', media: 'all', 'data-turbolinks-track' => true) +
-      javascript_include_tag('wysiwyg', 'data-turbolinks-track' => true)
-    end
-  end
-
   # Returns the ActiveRecord column type or nil.
   def column_type(obj, attr)
     column_property(obj, attr, :type)
@@ -49,11 +42,17 @@ module UtilityHelper
 
   # Returns an ActiveRecord column property for the passed attr or nil
   def column_property(obj, attr, property)
-    if obj.respond_to?(:column_for_attribute) && obj.has_attribute?(attr)
+    column = column_for_attr(obj, attr)
+    if !column.nil? && column.respond_to?(property)
       obj.column_for_attribute(attr).send(property)
     elsif obj.respond_to?(:translation)
       column_property(obj.translation, attr, property)
     end
+  end
+
+  def column_for_attr(obj, attr)
+    return nil unless obj.respond_to?(:column_for_attribute) && obj.has_attribute?(attr)
+    return obj.column_for_attribute(attr)
   end
 
   # Returns the association proxy for the given attribute. The attr parameter

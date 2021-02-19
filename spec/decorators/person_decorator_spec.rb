@@ -62,21 +62,38 @@ describe PersonDecorator, :draper_with_helpers do
 
 
   context 'participations' do
-    let(:course) { Fabricate(:course, groups: [groups(:top_layer)]) }
-
-    it 'pending_applications returns events that are not active' do
-      participation = Fabricate(:event_participation, person: person)
+    it 'pending_applications returns participations that are not active' do
+      dates = [Fabricate(:event_date, start_at: 10.days.from_now.to_date, finish_at: 18.days.from_now.to_date)]
+      course = Fabricate(:course, groups: [groups(:top_layer)], dates: dates)
+      participation = Fabricate(:event_participation, event: course, person: person)
       application = Fabricate(:event_application, priority_1: course, participation: participation)
 
       expect(subject.pending_applications).to eq [application]
     end
 
-    it 'upcoming_events returns events that are active' do
-      course.dates.build(start_at: 2.days.from_now, finish_at: 5.days.from_now)
-      course.save
+    it 'pending_applications does not return past events' do
+      dates = [Fabricate(:event_date, start_at: 10.days.ago, finish_at: 8.days.ago)]
+      course = Fabricate(:course, groups: [groups(:top_layer)], dates: dates)
+      participation = Fabricate(:event_participation, event: course, person: person, active: true)
+      Fabricate(:event_application, priority_1: course, participation: participation)
+
+      expect(subject.pending_applications).to be_empty
+    end
+
+    it 'upcoming_events returns participations that are active' do
+      dates = [Fabricate(:event_date, start_at: 2.days.from_now, finish_at: 5.days.from_now)]
+      course = Fabricate(:course, groups: [groups(:top_layer)], dates: dates)
       Fabricate(:event_participation, event: course, person: person, active: true)
 
       expect(subject.upcoming_events).to eq [course]
+    end
+
+    it 'upcoming_events does not return past events' do
+      dates = [Fabricate(:event_date, start_at: 10.days.ago, finish_at: 8.days.ago)]
+      course = Fabricate(:course, groups: [groups(:top_layer)], dates: dates)
+      Fabricate(:event_participation, event: course, person: person, active: true)
+
+      expect(subject.upcoming_events).to be_empty
     end
   end
 

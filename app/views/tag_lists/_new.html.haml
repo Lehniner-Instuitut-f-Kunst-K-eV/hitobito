@@ -1,0 +1,28 @@
+#tag-lists-new.modal.fade
+  .modal-dialog
+    .modal-content
+      .modal-header
+        %h5.bold.modal-title
+          %b=t('.title')
+
+      = standard_form(:add_tag_list,
+        url: group_tag_list_path(group), method: :post, remote: false) do |f|
+        .modal-body
+          .row-fluid
+
+            - unless @people_count.zero?
+              = hidden_field_tag('ids', @manageable_people.map(&:id).join(','))
+              = f.text_field(:tags,
+                             name: :tags,
+                             class: 'tag-list-add',
+                             data: { provide: 'entity',
+                                     url: group_person_tags_query_path(group_id: group.id, person_id: @manageable_people.first.id) })
+              = f.help_inline t('.separate_multiple_tags_with_comma')
+            - else
+              = t('.no_entries')
+
+        .modal-footer
+          = submit_button(f, t('.submit', count: @people_count)) unless @people_count.zero?
+          = link_to(ti('button.cancel'), '#',
+            class: 'link cancel',
+            onclick: "event.preventDefault(); $('#tag-lists-new').modal('hide')")

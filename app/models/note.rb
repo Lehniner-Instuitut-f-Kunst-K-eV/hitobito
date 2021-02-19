@@ -9,12 +9,16 @@
 # Table name: notes
 #
 #  id           :integer          not null, primary key
-#  subject_id   :integer          not null
-#  author_id    :integer          not null
-#  text         :text(65535)
+#  subject_type :string(255)
+#  text         :text(16777215)
 #  created_at   :datetime
 #  updated_at   :datetime
-#  subject_type :string(255)
+#  author_id    :integer          not null
+#  subject_id   :integer          not null
+#
+# Indexes
+#
+#  index_notes_on_subject_id  (subject_id)
 #
 
 class Note < ActiveRecord::Base
@@ -35,13 +39,15 @@ class Note < ActiveRecord::Base
     def in_or_layer_below(group)
       joins('LEFT JOIN roles ' \
             "ON roles.person_id = notes.subject_id AND notes.subject_type = '#{Person.sti_name}'").
-        joins('INNER JOIN groups ' \
-              "ON (groups.id = notes.subject_id AND notes.subject_type = '#{Group.sti_name}') " \
-              'OR (groups.id = roles.group_id)').
+        joins("INNER JOIN #{Group.quoted_table_name} " \
+              "ON (#{Group.quoted_table_name}.id = notes.subject_id "\
+                  "AND notes.subject_type = '#{Group.sti_name}') " \
+              "OR (#{Group.quoted_table_name}.id = roles.group_id)").
         where(roles: { deleted_at: nil },
               groups: { deleted_at: nil, layer_group_id: group.layer_group_id }).
-        where('groups.lft >= :lft AND groups.rgt <= :rgt', lft: group.lft, rgt: group.rgt).
-        uniq
+        where("#{Group.quoted_table_name}.lft >= :lft AND #{Group.quoted_table_name}.rgt <= :rgt",
+              lft: group.lft, rgt: group.rgt).
+        distinct
     end
   end
 

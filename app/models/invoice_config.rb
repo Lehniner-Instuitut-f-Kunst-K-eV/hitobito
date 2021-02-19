@@ -9,23 +9,30 @@
 # Table name: invoice_configs
 #
 #  id                          :integer          not null, primary key
-#  sequence_number             :integer          default(1), not null
-#  due_days                    :integer          default(30), not null
-#  group_id                    :integer          not null
-#  address                     :text(65535)
-#  payment_information         :text(65535)
 #  account_number              :string(255)
-#  iban                        :string(255)
-#  payment_slip                :string(255)      default("ch_es"), not null
-#  beneficiary                 :text(65535)
-#  payee                       :text(65535)
-#  participant_number          :string(255)
+#  address                     :text(16777215)
+#  beneficiary                 :text(16777215)
+#  currency                    :string(255)      default("CHF"), not null
+#  due_days                    :integer          default(30), not null
 #  email                       :string(255)
+#  iban                        :string(255)
+#  participant_number          :string(255)
 #  participant_number_internal :string(255)
+#  payee                       :text(16777215)
+#  payment_information         :text(16777215)
+#  payment_slip                :string(255)      default("ch_es"), not null
+#  sequence_number             :integer          default(1), not null
+#  vat_number                  :string(255)
+#  group_id                    :integer          not null
+#
+# Indexes
+#
+#  index_invoice_configs_on_group_id  (group_id)
 #
 
 class InvoiceConfig < ActiveRecord::Base
   include PaymentSlips
+  include ValidatedEmail
 
   IBAN_REGEX = /\A[A-Z]{2}[0-9]{2}\s?([A-Z]|[0-9]\s?){12,30}\z/
   ACCOUNT_NUMBER_REGEX = /\A[0-9]{2}-[0-9]{2,20}-[0-9]\z/
@@ -43,11 +50,10 @@ class InvoiceConfig < ActiveRecord::Base
   validates :email, format: Devise.email_regexp, allow_blank: true
 
   # TODO: probably the if condition is not correct, verification needed
-  validates :iban, presence: true, on: :update, if: :without_reference?
+  validates :iban, presence: true, on: :update, if: :qr?
   validates :iban, format: { with: IBAN_REGEX },
                    on: :update, allow_blank: true
 
-  validates :account_number, presence: true, on: :update
   validates :account_number, format: { with: ACCOUNT_NUMBER_REGEX },
                              on: :update, allow_blank: true, if: :post?
 
@@ -70,7 +76,7 @@ class InvoiceConfig < ActiveRecord::Base
   private
 
   def correct_address_wordwrap
-    return if payee.split(/\n/).length <= 2
+    return if payee.to_s.split(/\n/).length <= 2
     errors.add(:payee, :to_long)
   end
 

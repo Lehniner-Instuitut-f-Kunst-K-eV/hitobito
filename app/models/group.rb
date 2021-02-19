@@ -1,6 +1,6 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2018, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2019, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -9,39 +9,47 @@
 # Table name: groups
 #
 #  id                          :integer          not null, primary key
-#  parent_id                   :integer
-#  lft                         :integer
-#  rgt                         :integer
-#  name                        :string(255)      not null
-#  short_name                  :string(31)
-#  type                        :string(255)      not null
-#  email                       :string(255)
-#  address                     :string(1024)
-#  zip_code                    :integer
-#  town                        :string(255)
+#  address                     :text(16777215)
 #  country                     :string(255)
-#  contact_id                  :integer
+#  deleted_at                  :datetime
+#  description                 :text(16777215)
+#  email                       :string(255)
+#  lft                         :integer
+#  logo                        :string(255)
+#  name                        :string(255)      not null
+#  require_person_add_requests :boolean          default(FALSE), not null
+#  rgt                         :integer
+#  short_name                  :string(31)
+#  town                        :string(255)
+#  type                        :string(255)      not null
+#  zip_code                    :integer
 #  created_at                  :datetime
 #  updated_at                  :datetime
-#  deleted_at                  :datetime
-#  layer_group_id              :integer
+#  contact_id                  :integer
 #  creator_id                  :integer
-#  updater_id                  :integer
 #  deleter_id                  :integer
-#  require_person_add_requests :boolean          default(FALSE), not null
+#  layer_group_id              :integer
+#  parent_id                   :integer
+#  updater_id                  :integer
+#
+# Indexes
+#
+#  index_groups_on_layer_group_id  (layer_group_id)
+#  index_groups_on_lft_and_rgt     (lft,rgt)
+#  index_groups_on_parent_id       (parent_id)
+#  index_groups_on_type            (type)
 #
 
 class Group < ActiveRecord::Base
-
-  MINIMAL_SELECT = %w(id name type parent_id lft rgt layer_group_id deleted_at).
-                   collect { |a| "groups.#{a}" }
-
   include Group::NestedSet
   include Group::Types
   include Contactable
+  include ValidatedEmail
 
   acts_as_paranoid
   extend Paranoia::RegularScope
+
+  mount_uploader :logo, Group::LogoUploader
 
   ### ATTRIBUTES
 
@@ -49,7 +57,7 @@ class Group < ActiveRecord::Base
   # This must contain the superior attributes as well.
   class_attribute :used_attributes
   self.used_attributes = [:name, :short_name, :email, :contact_id,
-                          :email, :address, :zip_code, :town, :country]
+                          :email, :address, :zip_code, :town, :country, :description]
 
   # Attributes that may only be modified by people from superior layers.
   class_attribute :superior_attributes
@@ -92,14 +100,23 @@ class Group < ActiveRecord::Base
 
   has_one :invoice_config, dependent: :destroy
   has_many :invoices
+  has_many :invoice_lists
   has_many :invoice_articles, dependent: :destroy
   has_many :invoice_items, through: :invoices
 
+  has_many :service_tokens,
+           foreign_key: :layer_group_id,
+           dependent: :destroy
+
+
+  has_settings :text_message_provider, class_name: 'GroupSetting'
+
   ### VALIDATIONS
 
-  validates_by_schema
+  validates_by_schema except: [:logo, :address]
   validates :email, format: Devise.email_regexp, allow_blank: true
-
+  validates :description, length: { allow_nil: true, maximum: 2**16 - 1 }
+  validates :address, length: { allow_nil: true, maximum: 1024 }
 
   ### CLASS METHODS
 
@@ -114,15 +131,20 @@ class Group < ActiveRecord::Base
     # as they appear in possible_children, otherwise order them
     # hierarchically over all group types.
     def order_by_type(parent_group = nil)
+      reorder(Arel.sql(order_by_type_stmt(parent_group))) # acts_as_nested_set default to new order
+    end
+
+    def order_by_type_stmt(parent_group = nil)
       types = with_child_types(parent_group)
       if types.present?
-        statement = 'CASE groups.type '
+        statement = ["CASE #{Group.quoted_table_name}.type"]
         types.each_with_index do |t, i|
-          statement << "WHEN '#{t.sti_name}' THEN #{i} "
+          statement << "WHEN '#{t.sti_name}' THEN #{i}"
         end
-        statement << 'END, '
+        statement << 'END,'
       end
-      reorder("#{statement} lft") # acts_as_nested_set default to new order
+
+      "#{statement.join(' ')} lft"
     end
 
     private
@@ -146,7 +168,7 @@ class Group < ActiveRecord::Base
   end
 
   def display_name
-    short_name.present? ? short_name : name
+    short_name.presence || name
   end
 
   def display_name_downcase
@@ -170,7 +192,7 @@ class Group < ActiveRecord::Base
   alias hard_destroy really_destroy!
   def really_destroy!
     # run nested_set callback on hard destroy
-    destroy_descendants_without_paranoia
+    # destroy_descendants_without_paranoia
 
     # load events to destroy orphaned later
     event_list = events.to_a
@@ -186,7 +208,33 @@ class Group < ActiveRecord::Base
     GroupDecorator
   end
 
+  def person_duplicates
+    if top?
+      duplicates = PersonDuplicate.all
+    elsif layer?
+      duplicates = layer_person_duplicates
+    end
+    duplicates.includes(person_1: [{ roles: :group }, :groups, :primary_group],
+                        person_2: [{ roles: :group }, :groups, :primary_group])
+  end
+
+  def settings_all
+    GroupSetting.list(id)
+  end
+
   private
+
+  def layer_person_duplicates
+    duplicates = PersonDuplicate.joins(person_1: :roles).joins(person_2: :roles)
+    group_ids = children.map(&:id) + [id]
+    duplicates
+      .where('roles.group_id IN (:group_ids) OR roles_people.group_id IN (:group_ids)',
+             group_ids: group_ids)
+  end
+
+  def top?
+    parent.nil?
+  end
 
   def destroy_orphaned_event(event)
     if event.group_ids.blank? || event.group_ids == [id]
@@ -205,10 +253,13 @@ class Group < ActiveRecord::Base
     children.without_deleted
   end
 
-  def destroy_descendants_with_paranoia
-    # do not destroy descendants on soft delete
+  module Paranoia
+    def destroy_descendants
+      # do not destroy descendants on soft delete
+    end
   end
-  alias_method_chain :destroy_descendants, :paranoia
+
+  prepend Group::Paranoia
 
   def create_invoice_config
     create_invoice_config!

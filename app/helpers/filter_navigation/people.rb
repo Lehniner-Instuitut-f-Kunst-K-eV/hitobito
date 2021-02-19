@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-#  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -56,8 +56,8 @@ module FilterNavigation
         types = group.role_types.select { |t| t.kind == kind }
         next unless visible_role_types?(types)
 
-        count = group.people.where(roles: { type: types.collect(&:sti_name) }).uniq.count
-        path = kind == :member ? path : fixed_types_path(name, types)
+        count = group.people.where(roles: { type: types.collect(&:sti_name) }).distinct.count
+        path = kind == :member ? path() : fixed_types_path(name, types)
         item(name, path, count)
       end
     end
@@ -95,7 +95,7 @@ module FilterNavigation
     end
 
     def add_people_filter_links
-      filters = PeopleFilter.for_group(group)
+      filters = PeopleFilter.for_group(group).list
       filters.each { |filter| people_filter_link(filter) }
     end
 
@@ -136,7 +136,7 @@ module FilterNavigation
 
     def delete_filter_item(filter)
       ::Dropdown::Item.new(
-        filter_label(:trash, :delete),
+        filter_label(:'trash-alt', :delete),
         delete_group_people_filter_path(filter),
         data: { confirm: template.ti(:confirm_delete), method: :delete }
       )

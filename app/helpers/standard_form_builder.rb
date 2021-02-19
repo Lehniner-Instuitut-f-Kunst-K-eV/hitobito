@@ -1,11 +1,11 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2021, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
 
-# rubocop:disable ClassLength
+# rubocop:disable Metrics/ClassLength,Rails/HelperInstanceVariable
 
 # A form builder that automatically selects the corresponding input field
 # for ActiveRecord column types. Convenience methods for each column type allow
@@ -33,8 +33,8 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
   # Render a corresponding input field for the given attribute.
   # The input field is chosen based on the ActiveRecord column type.
   # Use additional html_options for the input element.
-  def input_field(attr, html_options = {}) # rubocop:disable Metrics/PerceivedComplexity
-    type = column_type(@object, attr)
+  def input_field(attr, html_options = {}) # rubocop:disable Metrics/MethodLength,Metrics/CyclomaticComplexity
+    type = column_type(@object, attr.to_sym)
     custom_field_method = :"#{type}_field"
     if type == :text
       text_area(attr, html_options)
@@ -66,6 +66,11 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
     super(attr, html_options)
   end
 
+  # Render an action text input field.
+  def rich_text_area(attr, html_options = {})
+    super(attr, html_options)
+  end
+
   # Render a number field.
   def number_field(attr, html_options = {})
     html_options[:size] ||= 10
@@ -90,9 +95,12 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
 
   # Render a boolean field.
   def boolean_field(attr, html_options = {})
-    caption = ' ' + html_options.delete(:caption).to_s
+    caption   = ' ' + html_options.delete(:caption).to_s
+    checked   = html_options.delete(:checked_value) { '1' }
+    unchecked = html_options.delete(:unchecked_value) { '0' }
+
     label(attr, class: 'checkbox') do
-      check_box(attr, html_options) + caption
+      check_box(attr, html_options, checked, unchecked) + caption.html_safe # rubocop:disable Rails/OutputSafety
     end
   end
 
@@ -101,7 +109,7 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
     html_options[:value] ||= date_value(attr)
     html_options[:class] ||= 'span2 date'
     content_tag(:div, class: 'input-prepend') do
-      content_tag(:span, icon(:calendar), class: 'add-on') +
+      content_tag(:span, icon(:'calendar-alt'), class: 'add-on') +
       text_field(attr, html_options)
     end
   end
@@ -207,7 +215,7 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
   # Use additional html_options for the select element.
   # To pass a custom element list, specify the list with the :list key or
   # define an instance variable with the pluralized name of the association.
-  def has_many_field(attr, html_options = {}) # rubocop:disable PredicateName
+  def has_many_field(attr, html_options = {}) # rubocop:disable Naming/PredicateName
     html_options[:multiple] = true
     html_options[:class] ||= 'span6'
     add_css_class(html_options, 'multiselect')
@@ -231,8 +239,10 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
                          url: @template.query_people_path })
   end
 
-  def labeled_inline_fields_for(assoc, partial_name = nil, record_object = nil, &block)
-    content_tag(:div, class: 'control-group') do
+  def labeled_inline_fields_for(assoc, partial_name = nil, record_object = nil, required = false,
+                                &block)
+    required_class = required ? ' required' : nil
+    content_tag(:div, class: ['control-group', required_class].compact.join(' ')) do
       label(assoc, class: 'control-label') +
       nested_fields_for(assoc, partial_name, record_object) do |fields|
         content = block_given? ? capture(fields, &block) : render(partial_name, f: fields)
@@ -270,7 +280,7 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
   #   labeled(:attr, content)
   #   labeled(:attr, 'Caption') { #content }
   #   labeled(:attr, 'Caption', content)
-  def labeled(attr, caption_or_content = nil, content = nil, html_options = {}, &block)
+  def labeled(attr, caption_or_content = nil, content = nil, html_options = {}, &block) # rubocop:disable Metrics/MethodLength
     if block_given?
       content = capture(&block)
     elsif content.nil?
@@ -279,8 +289,10 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
     end
     caption_or_content ||= captionize(attr, klass)
     add_css_class(html_options, 'controls')
-    css_classes = { 'control-group' => true, error: errors_on?(attr), required: required?(attr) }
-
+    css_classes = { 'control-group' => true,
+                    error: errors_on?(attr),
+                    required: required?(attr),
+                    'no-attachments': no_attachments?(attr) }
     content_tag(:div, class: css_classes.select { |_css, show| show }.keys.join(' ')) do
       label(attr, caption_or_content, class: 'control-label') +
       content_tag(:div, content, html_options)
@@ -311,8 +323,11 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
   # only an initial selection prompt or a blank option, respectively.
   def select_options(attr)
     assoc = association(@object, attr)
-    required?(attr) ? { prompt: ta(:please_select, assoc) } :
-                      { include_blank: ta(:no_entry, assoc) }
+    if required?(attr)
+      { prompt: ta(:please_select, assoc) }
+    else
+      { include_blank: ta(:no_entry, assoc) }
+    end
   end
 
   # Dispatch methods starting with 'labeled_' to render a label and the corresponding
@@ -339,8 +354,9 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
   end
 
   # Generates a help block for fields
-  def help_block(text = nil, &block)
-    content_tag(:span, text, class: 'help-block', &block)
+  def help_block(text = nil, options = {}, &block)
+    additional_classes = Array(options.delete(:class))
+    content_tag(:span, text, class: "help-block #{additional_classes.join(' ')}", &block)
   end
 
   # Returns the list of association entries, either from options[:list],
@@ -394,6 +410,7 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
   # Returns true if the given attribute must be present.
   def required?(attr)
     return true if dynamic_required?(attr)
+
     attr = attr.to_s
     attr, attr_id = assoc_and_id_attr(attr)
     validators = klass.validators_on(attr) +
@@ -406,10 +423,16 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
 
   def dynamic_required?(attr)
     return false unless @object.respond_to?(:required_attributes)
+
     @object.required_attributes.include?(attr.to_s)
   end
 
-  private
+  def no_attachments?(attr)
+    return false unless @object
+
+    validators = klass.validators_on(attr)
+    validators.any? { |v| v.kind == :no_attachments }
+  end
 
   def labeled_field_method?(name)
     prefix = 'labeled_'
@@ -421,8 +444,6 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
 
   def build_labeled_field(field_method, *args)
     options = args.extract_options!
-    help = options.delete(:help)
-    help_inline = options.delete(:help_inline)
     label = options.delete(:label)
     addon = options.delete(:addon)
 
@@ -431,11 +452,27 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
 
     text = send(field_method, *(args << options))
     text = with_addon(addon, text) if addon.present?
-    text << help_inline(help_inline) if help_inline.present?
-    text << help_block(help) if help.present?
-    labeled_args << text
+    with_labeled_field_help(args.first, options) { |help| text << help }
 
+    labeled_args << text
     labeled(*labeled_args)
+  end
+
+  def with_labeled_field_help(field, options)
+    help = options.delete(:help)
+    help_inline = options.delete(:help_inline)
+
+    if help.present?
+      yield help_inline(help_inline) if help_inline.present?
+      yield help_block(help)
+    else
+      yield help_texts.render_field(field)
+      yield help_inline(help_inline) if help_inline.present?
+    end
+  end
+
+  def help_texts
+    @help_texts ||= HelpTexts::Renderer.new(template)
   end
 
   def klass
@@ -447,3 +484,5 @@ class StandardFormBuilder < ActionView::Helpers::FormBuilder
   end
 
 end
+
+# rubocop:enable Metrics/ClassLength,Rails/HelperInstanceVariable

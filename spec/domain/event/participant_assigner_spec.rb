@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -45,14 +45,24 @@ describe Event::ParticipantAssigner do
         quest = course.questions.first
         other = Fabricate(:course, groups: [groups(:top_layer)])
         other.questions << Fabricate(:event_question, event: other)
-        other.questions << Fabricate(:event_question, event: other, question: quest.question, choices: quest.choices)
+        other.questions << Fabricate(:event_question, event: other, question: quest.question, choices: quest.choices, multiple_choices: quest.multiple_choices)
         other
       end
 
-      it 'updates answers for other event' do
-        expect { subject.add_participant }.to change { Event::Answer.count }.by(1)
+      it 'updates participation' do
+        subject.add_participant
 
         expect(participation.event_id).to eq(event.id)
+      end
+
+      it 'updates answers so that every question of the new course has an answer' do
+        expect { subject.add_participant }.to change { Event::Answer.count }.by(1)
+
+        expect(participation.answers.count).to eq(3)
+        answered = participation.reload.answers.map {|answer| answer.question.id}
+        event.questions.each do |question|
+          expect(answered).to include(question.id)
+        end
       end
 
       it 'raises error on existing participation' do
@@ -78,6 +88,14 @@ describe Event::ParticipantAssigner do
 
     it 'does not touch participation' do
       subject.remove_participant
+      expect(Event::Participation.where(id: participation.id).exists?).to be_truthy
+    end
+
+    it 'works even when the course in priority_1 does not exist anymore' do
+      participation.application.update_attribute('priority_1_id', '99999')
+      subject.remove_participant
+      participation.reload
+      expect(participation).not_to be_active
       expect(Event::Participation.where(id: participation.id).exists?).to be_truthy
     end
 

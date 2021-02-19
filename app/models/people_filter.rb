@@ -9,13 +9,17 @@
 # Table name: people_filters
 #
 #  id           :integer          not null, primary key
-#  name         :string(255)      not null
-#  group_id     :integer
+#  filter_chain :text(16777215)
 #  group_type   :string(255)
-#  filter_chain :text(65535)
+#  name         :string(255)      not null
 #  range        :string(255)      default("deep")
 #  created_at   :datetime
 #  updated_at   :datetime
+#  group_id     :integer
+#
+# Indexes
+#
+#  index_people_filters_on_group_id_and_group_type  (group_id,group_type)
 #
 
 class PeopleFilter < ActiveRecord::Base
@@ -27,7 +31,7 @@ class PeopleFilter < ActiveRecord::Base
   belongs_to :group
 
   validates_by_schema
-  validates :name, uniqueness: { scope: [:group_id, :group_type] }
+  validates :name, uniqueness: { scope: [:group_id, :group_type], case_sensitive: false }
   validates :range, inclusion: { in: RANGES }
 
   scope :list, -> { order(:name) }

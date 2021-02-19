@@ -9,11 +9,16 @@
 # Table name: qualifications
 #
 #  id                    :integer          not null, primary key
-#  person_id             :integer          not null
-#  qualification_kind_id :integer          not null
-#  start_at              :date             not null
 #  finish_at             :date
 #  origin                :string(255)
+#  start_at              :date             not null
+#  person_id             :integer          not null
+#  qualification_kind_id :integer          not null
+#
+# Indexes
+#
+#  index_qualifications_on_person_id              (person_id)
+#  index_qualifications_on_qualification_kind_id  (qualification_kind_id)
 #
 
 class Qualification < ActiveRecord::Base
@@ -65,12 +70,7 @@ class Qualification < ActiveRecord::Base
     private
 
     def add_reactivateable_years_to_finish_at
-      case connection.adapter_name.downcase
-      when /sqlite/
-        "DATE(qualifications.finish_at, '+' || qualification_kinds.reactivateable || ' YEARS')"
-      else
-        'DATE_ADD(qualifications.finish_at, INTERVAL qualification_kinds.reactivateable YEAR)'
-      end
+      'DATE_ADD(qualifications.finish_at, INTERVAL qualification_kinds.reactivateable YEAR)'
     end
 
   end

@@ -10,7 +10,7 @@ module PaymentSlips
 
   include I18nEnums
 
-  PAYMENT_SLIPS = %w(ch_es ch_bes ch_esr ch_besr).freeze
+  PAYMENT_SLIPS = %w(ch_es ch_bes ch_esr ch_besr no_ps qr).freeze
 
   included do
     i18n_enum :payment_slip, PAYMENT_SLIPS, scopes: true, queries: true
@@ -25,10 +25,6 @@ module PaymentSlips
 
     def with_reference?
       ch_esr? || ch_besr?
-    end
-
-    def without_reference?
-      !with_reference?
     end
 
     def bank_with_reference?

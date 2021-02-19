@@ -26,14 +26,14 @@ describe Event::ParticipationMailer do
   subject { mail.parts.first.body }
 
   it 'includes an html and a pdf part' do
-    expect(mail.parts.first.content_type).to eq "text/html; charset=UTF-8"
-    expect(mail.parts.second.content_type).to eq "application/pdf; filename=eventus-top_leader.pdf"
+    expect(mail.parts.first.content_type).to eq 'text/html; charset=UTF-8'
+    expect(mail.parts.second.content_type).to eq 'application/pdf; filename=eventus-top_leader.pdf'
   end
 
   it 'deals with quotes in event name' do
-    event.update(name: %Q(Now "with" quotes))
-    expect(mail.parts.first.content_type).to eq "text/html; charset=UTF-8"
-    expect(mail.parts.second.content_type).to eq "application/pdf; filename=now_with_quotes-top_leader.pdf"
+    event.update(name: %(Now "with" quotes))
+    expect(mail.parts.first.content_type).to eq 'text/html; charset=UTF-8'
+    expect(mail.parts.second.content_type).to eq 'application/pdf; filename=now_with_quotes-top_leader.pdf'
   end
 
   describe 'event data' do
@@ -93,7 +93,7 @@ describe Event::ParticipationMailer do
     end
 
     it 'sends to all email addresses of participant' do
-      person.update_attributes!(email: nil)
+      person.update!(email: nil)
       e1 = Fabricate(:additional_email, contactable: person, mailings: true, public: true)
       participation.person.reload
       expect(mail.to).to eq [e1.email]

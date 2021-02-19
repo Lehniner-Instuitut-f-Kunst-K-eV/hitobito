@@ -1,0 +1,23 @@
+/ #  Copyright (c) 2012-2021, CVP Schweiz. This file is part of
+/ #  hitobito and licensed under the Affero General Public License version 3
+/ #  or later. See the COPYING file at the top-level directory or at
+/ #  https://github.com/hitobito/hitobito.
+
+#main.row
+  %article.col-lg-5
+    - if entry.text_message?
+      = render_attrs entry, :type, :text
+    - else
+      = render_attrs entry, :type, :subject
+    - if entry.letter?
+      = render_attrs entry, :body
+
+    - if entry.dispatched?
+      %h2=t('.dispatch_infos')
+      = render_attrs entry, :recipient_count, :state
+      - if entry.sent_at
+        = render_attrs entry, :sent_at, :success_count, :failed_count, :sent_at
+
+  - if entry.invoice?
+    %aside.col-lg-5.offset-lg-1
+      = render "invoice_aside", invoice: entry.invoice

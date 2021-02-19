@@ -2,6 +2,7 @@ fr:
   global:
     'yes': "oui"
     'no': "non"
+    ok: OK
     unknown: Inconnu
     nobody: personne
     all: Tous
@@ -11,6 +12,8 @@ fr:
     confirm_delete: Souhaitez-vous vraiment effacer cet enregistrement?
     do_not_fill: Ne pas remplir cette case SVP.
     chosen_no_results: Aucun résultat avec
+    selected: Sélectionné
+    columns: Colonnes
     gender:
       male: Masculin
       female: féminin
@@ -20,19 +23,22 @@ fr:
       no_entry: (aucun)
       none_available: (aucun disponible)
       please_select: sélectionner s.v.p.
-      add: Ajouter une entrée
+      add: Article supplémentaire
       remove: Supprimer
     button:
       save: Enregistrer
+      add_another: Sauver et saisir d'autres
       cancel: Annuler
+      close: Fermer
       search: Chercher
       back: Retour
       refresh: Mettre à jour
       print: Imprimer
+      copy: Copier
     link:
       show: Afficher
       edit: Modifier
-      add: Créer
+      add: Établir
       delete: Effacer
       list: Liste
     errors:
@@ -41,6 +47,7 @@ fr:
         other: '%{count} erreurs sont apparues, l''entrée suivante n''a pas pu être enregistrée :'
     tabs:
       info: Informations
+      settings: Paramètres
     search:
       placeholder: 'Recherche...'
       placeholder_person: 'Chercher une personne …'
@@ -54,7 +61,24 @@ fr:
     show:
       title: "%{model}"
     new:
-      title: "Créer un %{model}"
+      title: "Créer %{model}"
+    edit:
+      title: "Modifier %{model}"
+    create:
+      flash:
+        success: "%{model} a été créé avec succès."
+    update:
+      flash:
+        success: "%{model} a été mis à jour avec succès."
+    destroy:
+      flash:
+        success: "%{model} a été effacé avec succès."
+        failure: "%{model} n'a pas pu être effacé."
+  modal_crud:
+    show:
+      title: "%{model}"
+    new:
+      title: "Créer %{model}"
     edit:
       title: "Modifier %{model}"
     create:
@@ -80,9 +104,13 @@ fr:
       placeholder_value: Courriel
       placeholder_type: Type (privé, professionnel, …)
       tooltip_mailings: Les diffusions d'abonnements, les confirmations par e-mail etc. sont également envoyées à toutes les adresses marquées ici.
+    address_fields:
+      updates_household_address: l'adresse est actualisée pour l'ensemble du foyer
   custom_content_decorator:
     available_placeholders: "éléments de substitution disponibles:  %{placeholders}"
     available_placeholders_empty: 'Pas d''éléments de substitution disponibles'
+  dropdown:
+    last_used: 'utilisé pour la dernière fois '
   dropdown/event/group_filter:
     all_groups: 'Tous les groupes'
   dropdown/event/events_export:
@@ -108,12 +136,20 @@ fr:
     households: 'Liste des foyers'
     everything: 'Toutes les informations'
     household_option: 'Rassembler les foyers'
+    selection: 'Colonnes choisies'
   dropdown/invoices:
     download: 'Exporter'
     print: 'Imprimer'
     labels: 'Etiquettes'
+    full: 'Facture avec bulletin de versement'
+    esr_only: 'bulletin de versement séparé'
+    articles_only: 'facture séparée'
     csv: 'CSV'
     pdf: 'PDF'
+  dropdown/invoice_sending:
+    button: 'Établir une facture / un rappel'
+    set_state: 'Saisir le statut (facture/rappel)'
+    send_mail: 'Saisir le statut (facture/rappel) et envoyer par mail'
   devise:
     failure:
       already_authenticated: 'Tu es déjà inscrit(e).'
@@ -133,7 +169,7 @@ fr:
       new:
         sign_in: Inscription
       form:
-        sign_in: 'Inscription'
+        sign_in: Inscription
     passwords:
       send_instructions: 'Dans quelques minutes, tu recevras un courriel qui t''expliquera comment réinitialiser ton mot de passe.'
       updated: 'Ton mot de passe a été modifié. Tu es maintenant authentifié(e).'
@@ -192,7 +228,7 @@ fr:
     priorities: 'Priorité d''inscription'
     lists:
       courses:
-        title: 'Cours disponibles'
+        title: 'Cours enregistrés'
         explanation: 'Les cours de ton groupe ainsi que des groupes hiérarchiquement supérieurs sont indiqués ici. Tu trouveras d''autres cours auprès des groupes qui les organisent.'
         csv_export_button: 'Export CSV'
         ical_export_button: 'Export du calendrier'
@@ -203,7 +239,7 @@ fr:
     application_market:
       already_assigned: 'Cette personne est déjà attribuée à un autre endroit.'
       participation:
-        registered_at: 'Inscription le %{date}'
+        registered_at: 'Inscription le %{datetime}'
         town: Domicile
       prio_buttons:
         national_waitinglist: 'liste d''attente nationale'
@@ -236,7 +272,8 @@ fr:
         and: et
     participation_contact_datas:
       edit:
-        title: Coordonnées
+        title: Saisir les données de contact de la personne participante
+        wizard_title: Données de contact
         save: Continuer
     participations:
       edit:
@@ -286,7 +323,7 @@ fr:
           success: Les qualifications ont été mises à jour.
     register:
       register:
-        title: Saisir les données de contact
+        title: Saisir les données de contact de la personne participante
       index:
         sign_in: Inscription
         login: Login
@@ -294,6 +331,15 @@ fr:
       email_check:
         next: Continuer
         enter_email: S'il te plaît, indique ton adresse e-mail pour t'inscrire à cet événement.
+    participation_lists:
+      create:
+        success:
+          one: "Une Personne a été ajouté au %{event_type} '%{event}'"
+          other: "%{count} personnes ont été ajouté au %{event_type} '%{event}'"
+      new:
+        title: 'Attribuer des personnes à %{event_label} '
+        event_search: Chercher un événement
+        submit: Ajouter
   events:
     application_fields:
       caption_signature: Les participants doivent signer l'inscription.
@@ -308,11 +354,13 @@ fr:
       caption_prioritization: 'Les participants peuvent indiquer deux autres cours alternatifs lors de l''inscription.'
       caption_requires_approval: 'Le responsable de troupe est informé et doit confirmer l''inscription.'
       times_are_optional: L'heure est optionnelle.
-      explain_application_questions: Tu peux demander des données supplémentaires pour l'inscription. Saisis les réponses possibles en les séparant avec une virgule, ou laisse le champ vierge pour permettre des réponses libres.
+      explain_application_questions: Ici, tu peux demander des informations supplémentaires pour les inscriptions.
+      explain_choices: Laissez vide pour la réponse en texte libre, une ou plusieurs options de réponse (séparées par des virgules) pour la sélection.
       explain_admin_questions: Tu peux définir des données supplémentaires pour chaque participant(e); elles ne seront utilisées que pour l'administration du cours.
       explain_contact_attrs: Tu peux choisir les coordonnées requises pour l'inscription.
       caption_applications_cancelable: Les participants peuvent se désinscrire eux-mêmes.
       caption_display_booking_info: Le nombre d'inscrits et de places libres est visible pour tous sur la liste de cours.
+      caption_waiting_list: S'il n'y a plus de places disponibles, les nouvelles inscriptions se retrouvent automatiquement sur la liste d'attente.
     form_tabs:
       general: Général
       application_questions: Données pour l'inscription
@@ -322,7 +370,7 @@ fr:
       link:
         add_event: Créer un événement
         add_event/course: Créer un cours
-        duplicate: Dupliquer
+        duplicate: Copier
     minimum_age_with_years: 'au moins %{minimum_age}  ans (année de naissance)'
     new:
       title_event: Créer un événement
@@ -330,10 +378,11 @@ fr:
     preconditions: 'qualifications requises'
     tabs:
       participants: 'Participants'
-    export_enqueued: 'L''exportation a commencé. Il sera envoyé à %{email} une fois terminé.'
+    export_enqueued: 'l''exportation débute en arrière-plan et est téléchargée quand elle est terminée'
   event/applications:
     approved: 'L''inscription a été autorisée.'
     rejected: 'L''inscription a été refusée.'
+    directly_to_waiting_list: 'Toutes les places sont prises, donc l''inscription est directement sur la liste d''attente.'
   event/application_decorator:
     approval:
       approved: 'Autorisation du cours confirmée'
@@ -349,7 +398,8 @@ fr:
     full_entry_label: '%{model_label} de <i>%{person}</i> dans <i>%{event}</i>'
     success: '%{full_entry_label} a été ajouté avec succès.'
     instructions: 'Pour l''inscription définitive, tu dois imprimer cette page en utilisant l''option <i>imprimer</i>, puis la signer et l''envoyer par poste à l''adresse indiquée.'
-    export_enqueued: 'L''exportation a commencé. Il sera envoyé à %{email} une fois terminé.'
+    export_enqueued: 'l''exportation débute en arrière-plan et est téléchargée quand elle est terminée'
+    waiting_list: 'Toutes les places sont actuellement prises, l''inscription est sur la liste d''attente.'
     show:
       link:
         delete: 'Effacer l''inscription'
@@ -365,7 +415,7 @@ fr:
   event/register:
     not_logged_in: "Tu dois t'authentifier afin de pouvoir t'inscrire à l'événement '%{event}'."
     person_found: 'Nous t''avons trouvé(e) dans notre base de données.'
-    email_sent: 'Nous t''avons envoyer un courriel avec un lien avec lequel tu pourras t''inscrire directement à cet événement.'
+    email_sent: 'Nous t''avons envoyer un courriel. Dans ce courriel il y a un lien avec lequel tu pourras t''inscrire directement à cet événement.'
     email_missing: 'Indique une adresse e-mail, s''il te plaît.'
     form_data_missing: 'Prière de remplir le formulaire suivant avant de t''inscrire à cet événement.'
     registered: 'Tes données personnelles ont été enregistrées. Prière d''apporter les indications complémentaires suivantes en vue de l''inscription.'
@@ -390,6 +440,19 @@ fr:
       one: 'Prolonge la qualification existante %{prolonged} à la date du %{until} (dernier jour du cours).'
       other: 'Prolonge les qualifications existantes %{prolonged} à la date du %{until} (dernier jour du cours).'
     issue_and_prolong: 'Attribue la %{model} %{issued} et prolonge les qualifications existantes %{prolonged} à la date du %{until} (dernier jour du cours).'
+  event_feeds:
+    integrate: Intégrer dans le calendrier
+    show:
+      title: Intégrer mes évènements dans le calendrier
+      url: 'URL:%{url}'
+      create_url: Créer une adresse
+      url_description: 'Avec cette adresse, tu as accès à tous tes évènements. Attention: ne donne cette adresse qu''à des personnes qui peuvent voir tous les détails de tes rendez-vous.'
+      reset_url: Réinitialiser l'URL
+      reset_url_description: 'Si tu crains un abus, tu peux réinitialiser l''adresse internet de ton calendrier, ce qui désactive celle que tu utilises maintenant. Ainsi, tous les calendriers qui ne connaissent que l''ancienne adresse ne pourront plus voir tes évènements.'
+    update:
+      flash:
+        create: L'adresse a été créée.
+        reset: L'adresse a été actualisée.
   filter_navigation/dropdown:
     additional_views: 'Autres vues'
   filter_navigation/people:
@@ -397,6 +460,7 @@ fr:
     entire_layer: 'Tous les niveaux'
     entire_group: 'Tout le groupe'
     new_filter: 'Nouveau filtre…'
+    duplicates: 'Duplicatas'
   filter_navigation/events:
     all: 'Tous'
     layer: 'uniquement %{layer}'
@@ -462,6 +526,7 @@ fr:
     subgroups: 'Sous-groupes'
     tabs:
       deleted: 'Eléments effacés'
+    export_enqueued: 'L''exportation est lancée en arrière-plan et téléchargée une fois terminée.'
   group/person_add_requests:
     deactivated: Déblocage manuel désactivé
     activated: Déblocage manuel activé
@@ -474,6 +539,7 @@ fr:
     group_name_missing: 'Le nom du nouveau groupe doit être défini.'
     no_group_selected: 'Sélectionne un groupe avec lequel fusionner.'
     not_allowed: 'Tu n''as pas les autorisations nécessaires pour fusionner ces groupes.'
+    invoice_config_not_merged: 'Les réglages de la factures ne sont pas repris automatiquement. Prière de rentrer pour cela les réglages corrects manuellement.'
   group/move:
     success: '%{group} a été déplacé vers %{target}.'
     failure: 'Ce groupe ne peut pas être déplacé ou tu n''as pas les autorisations nécessaires.'
@@ -486,8 +552,130 @@ fr:
       other: "%{count} entrées lues avec succès."
   import/person_importer:
     row_with_error: "Ligne %{row}: %{errors}"
-  import/person_doublette_finder:
+  import/person_duplicate_finder:
     duplicates: "%{count} emplacements trouvés lors de la recherche de doublons."
+  invoices:
+    filter:
+      due_since: Échu(e) dès
+      due_since_list:
+        one_day: hier
+        one_week: une semaine
+        one_month: un mois
+    add: Établir une facture externe
+    add_payments: Saisir un paiement
+    issued: facture établie
+    sent: Facture envoyé par courriel
+    reminder_sent: rappel établi, échu le %{date} (%{title})
+    payed: payé
+    destroy:
+      flash:
+        success: facture annulée
+    pdf:
+      total: montant total
+      total_vat: TVA
+      cost: 'Montant '
+      invoice_number: No. de facture
+      invoice_date: Date de la facture
+      due_at: Échue le
+      creator: Auteur de la facture
+      vat_number: No TVA
+  invoice_configs:
+    form_tabs:
+      general: général
+    update:
+      flash:
+        success: les réglages de la factures mis à jour avec succès
+    general_fields:
+      payment: 'Paiement'
+      payment_information_help: 'Apparaît sur chaque facture, mais peut être adapté pour une facture'
+      address_help: 'Adresse de l''expéditeur qui apparaît sur la lettre'
+      email_help: 'Est utilisé comme mail de l''expéditeur au lieu de celui de l''utilisateur actuel'
+      payee_help: 'apparaît sur le bulletin de versement'
+      beneficiary_help: 'apparaît sur le bulletin de versement'
+      account_number_example: 'exemple : 01-162-5'
+      participant_number_internal_example: 'Exemple: 999999'
+      iban_example: 'exemple : CH93 2011 0076 6238 5295 7'
+    reminder_fields:
+      third_level: 'Pour tous les rappels suivants, les données du troisième rappel sont reprises.'
+  invoice_lists:
+    form:
+      recipient_info:
+        one: "La facture est établie pour und personne"
+        other: "La facture est établie pour %{count} personnes"
+    create:
+      one: "La facture a été établie pour un destinataire"
+      other: "La facture <i>%{title}</i> a été établie pour%{count}  destinataires."
+    update:
+      zero: 'Choisir au moins une facture.'
+      model_error: "la facture %{number} n'est pas valable - %{error}."
+      issued:
+        one: "%{count} les factures ont été établies."
+        other: "%{count} les factures ont été établies."
+      reminded:
+        one: "des rappels ont été établis pour %{count} factures"
+        other: "des rappels ont été établis pour %{count}  factures"
+      send_notification:
+        one: "%{count} factures sont envoyées en arrière-plan par e-mail."
+        other: "%{count} factures sont envoyées en arrière-plan par e-mail."
+      invalid_state:
+        one: "%{count} factures ont déjà été établies."
+        other: "%{count}"
+      issued_invalid:
+        one: "%{count} factures ont déjà été établies."
+        other: "%{count} "
+      sent_invalid:
+        one: "%{count} factures ont déjà été envoyées."
+        other: "%{count} factures ont déjà été"
+      payed_invalid:
+        one: "%{count} factures ont déjà été payées"
+        other: "%{count} ont déjà été payées."
+      reminded_invalid:
+        one: "%{count} rappels ont déjà été établis."
+        other: "%{count} rappels ont déjà été établis."
+      recipient_email_invalid:
+        one: "%{count} factures n'ont pas pu être envoyées car il n'y a pas d'e-mail de destinataire."
+        other: "%{count} factures n'ont pas pu être envoyées car il n'y a pas d'e-mail de destinataire."
+      payment_reminders_missing:
+        one: "%{count} rappels de factures n'"
+        other: "%{count} rappels de factures n'ont pas pu être établis car les réglages de rappel ne sont pas valables."
+    destroy:
+      zero: "Choisir d'abord une facture"
+      one: "La facture a été annulée."
+      other: "{count} Les factures ont été annulées."
+  payments:
+    create:
+      flash:
+        success: La facture supérieur à %{amount} saisie.
+  payment_processes:
+    description:
+      header: Fichier camt.054 XML
+      explain_xml_format: 'Une donnée camt.054 XML est la dissolution de l''écriture récapitulative et l''avis de débit et de note de crédit. Celle-ci contient une série de différentes écritures comptables qui sont classées automatiquement sur la base des factures dépendant du numéro ESR.'
+    invalid_file: La donnée téléchargée n'est pas valable.
+    parsing_error: La donnée téléchargée ne peut pas être retravaillée (%{error}).
+    created: '%{count} paiements ont été saisis.'
+    payments:
+      valid:
+        one: '%{count} de paiements valables ont été reconnus'
+        other: '%{count} de paiements valables ont été reconnus.'
+      invalid:
+        one: '%{count} de paiements non-valables ont été reconnus'
+        other: '%{count} de paiements non-valables ont été reconnus'
+    show:
+      payments_with_invoice: Paiements allouables
+      payments_with_invoice_and_dates: Paiements allouables du %{from} au %{to}
+      payments_without_invoice: pas attribuable
+      amount_open: ouvert
+      create:
+        zero: importer le paiement
+        one: importer le paiement
+        other: 'importer %{count} paiements.'
+      icon_tooltip_invoice_missing: ne peut être attribué à aucune facture
+      icon_tooltip_settles: règle la facture ouverte
+      icon_tooltip_exceeds: dépasse la facture ouverte %{difference}
+      icon_tooltip_undercuts: est en-dessous de la facture ouverte de %{difference}
+    new:
+      upload_button: 'télécharger'
+      xml_file: 'Fichier XML'
   label_formats:
     global_labels: "Formats globaux d'étiquettes"
     own_labels: Mes formats d'étiquettes
@@ -512,6 +700,13 @@ fr:
     user_impersonation:
       info: "Tu es maintenant enregistré en tant que %{user}"
       end: "Terminer l'imitation"
+    file_download:
+      wait_for_downloads: 'Les téléchargements sont en cours de préparation, prière d''attendre.'
+      cancel_downloads: 'interrompre les téléchargements'
+    synchronization:
+      wait_for_synchronization: 'Vos données sont actuellement envoyées à MailChimp. Cela peut prendre un moment. Ensuite, la liste sélectionnée avec les contacts de hitobito sera mise à jour.'
+      synchronization_failed: 'Une erreur s''est produite lors de l''envoi des données à MailChimp. (%{error}).'
+      cancel_synchronization: 'Annuler l''exportation'
   mailing_lists:
     global:
       link:
@@ -525,6 +720,7 @@ fr:
       caption_anyone_may_post: 'Tous les expéditeurs peuvent écrire à la liste de diffusion.'
       caption_delivery_report: 'Envoyer l''e-mail avec confirmation à l''expéditeur'
       help_preferred_labels: 'Si disponibles, les e-mails ne sont envoyés qu''aux adresses e-mails avec cette désignation. Ce faisant, les adresses e-mail qui ne sont pas marquées comme adresses d''envoi seront également utilisées.'
+      help_mailchimp_sync: 'Les personnes abonnées peuvent être exportées vers la liste MailChimp. Cette action écrase la liste MailChimp et les contacts actuels sont effacés.'
   mailing_list_decorator:
     may_subscribe: 'Les abonnés peuvent s''inscrire / se désinscrire eux-même'
     may_not_subscribe: 'Les abonnés <strong>ne peuvent pas</strong> s''inscrire / se désinscrire eux-même'
@@ -537,10 +733,14 @@ fr:
     subscribe: 'Inscription'
     unsubscribe: 'Désinscription'
   navigation:
+    menu: 'Menu'
     groups: 'Groupes'
     events: 'Activités'
     courses: 'Cours'
-    admin: 'Administrateur'
+    admin: 'Paramètres'
+    admin/event_feed: 'Intégrer le calendrier'
+    admin/oauth_authorizations: 'Autoriser OAuth'
+    invoices: 'Factures'
   notes:
     new_note: Ajouter une note
     note:
@@ -548,6 +748,22 @@ fr:
     paginator:
       newer_notes: Nouvelles contributions
       older_notes: Anciennes contributions
+  oauth:
+    applications:
+      form:
+        help_native_redirect_uris: Une entrée par ligne. Pour les tests locaux, utiliser %{native_redirect_uri}.
+      attrs:
+        profile_endpoint_help: Les informations profil de l'utilisateur peuvent être prises au-delà ce Endpoint. Pour ce faire, il faut rendre le Access Token dans le Authorization Header. Le Scope souhaité peut être rendu en tant que X-Scope.
+        profile_endpoint_example: "curl -H 'Authorization: Bearer 057b491f0ea151782f1ab3ed67dba91eaf0d59e621f312afec4d3bf81e08777a' -H 'X-Scope: email' %{url}"
+    access_grants:
+      list:
+        title: '%{model_name} acrifs pour %{uri}'
+    authorizations:
+      title: Mes autorisations OAuth
+      revoke: "L'accès à <i>%{application}</i>a été annulé"
+    tabs:
+      grants: Autorisations
+      tokens: Token d'accès
   qualifications:
     in_years: '%{years} ans'
     valid_until: 'à %{date}'
@@ -563,6 +779,15 @@ fr:
       title: Créer une catégorie de qualification
   paper_trail/version_decorator:
     by: 'de %{author}'
+  person_duplicates:
+    merge:
+      new:
+        title: Merge une personne
+        irreversible: Cette opération est irréversible.
+      action: Merge
+    ignore:
+      new:
+        irreversible: Cette opération est irréversible.
   person:
     confirm_delete: "Toutes les données sur %{person} vont être définitivement effacées, y compris les participations et les qualifications. N'efface cette personne que si plus personne n'a besoin de ces données. "
     add_requests:
@@ -654,9 +879,19 @@ fr:
         request_link: Répondre à la requête
       ask_responsibles:
         request_link: 'Répondre à la requête '
+    subscriptions:
+      index:
+        my_subscriptions: Mes abonnements
+        available_subscriptions: Abonnements disponibles
+      create:
+        success: <i>%{person}</i>a été inscrit-e à <i>%{mailing_list}</i>.
+      destroy:
+        success: <i>%{person}</i> a été désinscrit-e de <i>%{mailing_list}</i>.
     tags:
-      list:
-        category_other: Autre
+      tag:
+        category_validation:
+          email_primary_invalid: Adresse e-mail principale non valide
+          email_additional_invalid: Adresse e-mail supplémentaire non valide
   person/csv_imports:
     invalid_file: Veuillez choisir un fichier CSV valable.
     duplicate_keys:
@@ -690,11 +925,14 @@ fr:
         other: '%{count} %{role} ont reçu une demande d''accès pour leurs données personnelles. Des changements éventuels dus à cette importation doivent être ré-effectués après cette confirmation.'
   people:
     send_password_instructions: Les données d'authentification ont été envoyées.
+    send_password_instructions_invalid_email: Les informations de login n'ont pas été envoyées étant donné que l'adresse e-mail indiquée n'est pas valable.
     years_old: (%{years} ans)
     tabs:
       history: Historique
       log: Journal
       colleagues: Collaborateurs/collaboratrices
+      invoices: Factures
+      subscriptions: Abonnements
     actions_show:
       send_login: Envoyer les données d'identification
       send_login_tooltip:
@@ -702,10 +940,11 @@ fr:
         resend: La personne a reçu un lien pour créer son mot de passe, mais ne l’a pas encore fait.<br><br> Cette action lui envoie à nouveau le lien.
         reset: La personne possède déjà Login<br><br>. Cette action lui envoie un lien afin de créer un nouveau mot de passe.
       impersonate_user: Imiter
-      impersonate_user_tooltip: Tu peux te servir d'hitobito comme si tu étais cette personne
+      impersonate_user_tooltip: Tu peux utiliser utiliser hitobito comme si tu étais enregistré comme cette personne.
     actions_index:
       add_person: Ajouter une personne
       import_list: Importer une liste
+      person_duplicate_list: Duplicatas
     add_requests:
       approve_title: 'Accepter la requête'
       reject_title: 'Refuser la requête'
@@ -747,8 +986,16 @@ fr:
     tags:
       add_tag: Ajouter un tag…
       no_entry: (aucun)
-    export_enqueued: 'L''exportation a commencé. Il sera envoyé à %{email} une fois terminé.'
-    export_email_needed: 'Pour l''export, une adresse e-mail est requise'
+    export_enqueued: 'L''exportation commence en arrière-plan et sera téléchargé après avoir été complété.'
+    export_email_needed: 'Adresse e-mail requise pour l''export.'
+    multiselect_actions:
+      remove_role: Retirer rôles
+      move_role: Déplacer rôles
+      add_role: Ajouter rôle
+      add_participation: Ajouter à l'événement
+      tag_lists: Tags
+      remove_tags: Enlever les tags
+      add_tags: Rajouter des tags
   participations:
     destroy:
       flash:
@@ -771,6 +1018,19 @@ fr:
         active: le rôle était actif.
         created: le rôle a été établi.
         deleted: le rôle a été effacé.
+    attributes:
+      title: Champ
+      match: contient
+      equal: est précis
+      greater: plus grand que
+      smaller: plus petit que
+    tag:
+      title: Tags
+      prompt_tag_selection: Inclure les personnes qui contiennent au moins une des tags ci-dessous
+      prompt_tag_placeholder: Entrez les noms de tags souhaités
+    tag_absence:
+      prompt_tag_absence_selection: 'Exclure les personnes qui contiennent au moins une des tags ci-dessous '
+      prompt_tag_absence_placeholder: Entrez les noms de tags souhaités
     new:
       title: Filtrer les personnes
     range:
@@ -827,8 +1087,79 @@ fr:
           Le rôle %{role} du groupe %{group} ne peut voir que les données publiques
           (groupes, événements et abonnements; pas d'autres personnes).
       only_visible_from_above: Ce rôle n'est visible que pour les personnes du même niveau, pas pour les personnes d'un niveau supérieur.
+  role_lists:
+    available:
+      no_entries: Aucun rôle à effacer pour vous
+    access_denied: 'Accès refusé pour %{person} '
+    destroy:
+      success:
+        zero: Aucun rôle a été effacé
+        one: Un rôle a été effacé
+        other: '%{count} rôles ont été effacés '
+    create:
+      success:
+        zero: Aucun rôle a été créé
+        one: Un rôle a été créé
+        other: '%{count} rôles ont été créé'
+      failure: Veuillez entrer un rôle valide
+    update:
+      success:
+        zero: Aucun rôle n'a été déplacé
+        one: Un rôle a été déplacé
+        other: '%{count} rôles ont été déplacés'
+      failure: Veuillez entrer un rôle valide
+    move:
+      title: Où les personnes doivent-elles être transférées?
+      submit: Continuer
+    movable:
+      title: Quels rôles doivent être supprimés?
+      submit: Déplacer rôles
+    deletable:
+      title: Quels rôles doivent être supprimés?
+      submit: Retirer
+    new:
+      title: 'Où les nouveaux rôles devraient-ils être créés? '
+      submit:
+        one: 'Créer un rôle'
+        other: 'Créer %{count} rôles'
+  tags:
+    multiselect_actions:
+      merge_tags: Merge
+    categories:
+      other: Autre
+      validation: Validation
+  tag_lists:
+    destroy:
+      success:
+        zero: Aucun tag n'a été enlevé
+        one: Un tag a été enlevé
+        other: '%{count} tags ont été enlevés'
+    create:
+      success:
+        zero: Aucun tag n'a été créé
+        one: Un tag a été créé
+        other: '%{count} tags ont été créés'
+    deletable:
+      title: Quels tags doivent-être supprimés?
+      no_entries: Aucun tag ne peut être supprimé parmi les personnes sélectionnées
+      submit: Enlever
+    new:
+      title: Quels tags doivent-être ajoutés?
+      no_entries: Aucun tag ne peut être créé sur les personnes sélectionnées.
+      separate_multiple_tags_with_comma: Séparez les tags par des virgules
+      submit:
+        one: 'Créer des tags sur une personne'
+        other: 'Créer des tags sur %{count} personnes'
+  service_tokens:
+    abilities:
+      read: Lecture
+    global:
+      link:
+        add: Ajouter API-Key
   subscriber:
     group:
+      edit:
+        title: Modifier abonnés
       form:
         subgroups_selectable: 'Seuls des groupes à un niveau inférieur du groupe d''abonnement peuvent être sélectionnés.'
         subgroups_and_siblings_selectable: 'Seuls des groupes à un niveau inférieur du groupe d''abonnement ou inférieur aux groupes voisins de type %{type} peuvent être sélectionnés.'
@@ -836,6 +1167,7 @@ fr:
         please_choose_group: S'il te plaît, choisis un groupe.
       tags:
         only_add_persons_with_tags: 'Seulement ajouter les contacts aves un des tags suivants:'
+        exclude_persons_with_tags: 'Exclure les contacts avec un des tags suivants:'
     exclude_person:
       form:
         exclude_subscriber: 'Exclure les abonné-e-s'
@@ -852,9 +1184,11 @@ fr:
   sheet/person/csv_import:
     title: 'Importer les personnes par CSV'
   sheet/group:
-    belongs_to: 'appartient à'
+    belongs_to: 'Fait partie de'
     deleted: '(effacé)'
     layer_upwards: '< vers le niveau supérieur'
+  sheet/payment_process:
+    title: Importer des paiements par XML
   subscriptions:
     actions_index:
       add_person: Ajouter une personne
@@ -866,7 +1200,8 @@ fr:
       export_not_allowed: 'Tu n''as pas le droit d''exporté les abonnés de cet abonnement, car ils contiennent des rôles ou des activités qui ne font pas partie de ton domaine d''autorisation.'
     subscription:
       only_persons_with: 'Seulement personnes avec:'
-    export_enqueued: 'L''exportation a commencé. Il sera envoyé à %{email} une fois terminé.'
+      persons_excluded_with: 'Personnes exclues avec:'
+    export_enqueued: 'L''exportation commence en arrière-plan et sera téléchargé après avoir été complété.'
   version:
     attribute_change:
       from_to: "%{attr} a été changé de <i>%{from}</i> à <i>%{to}</i>."
@@ -882,6 +1217,17 @@ fr:
         destroy: "Il y a eu une réponse pour la demande d'accès de <i>%{label}</i>."
     impersonate: "Le compte a été repris par %{user}."
     impersonation_done: "Le compte n'est plus utilisé par %{user}."
+    append_to_household: "%{item} a été ajouté au ménage (%{object_changes})."
+    household_updated: "Le foyer (%{object_changes}) a été actualisé."
+    remove_from_household: "%{item} a été retiré du ménage (%{object_changes})."
+  tags/merge:
+    success: Les tags ont été fusionnés avec succès.
+  tags_merge:
+    tags: Tags
+    title: Faut-il fusionner les tags sélectionnés?
+    name: Nouveau nom
+    submit: Merge
+    category: catégorie
   views:
     pagination:
       next: '>>'

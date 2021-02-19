@@ -10,6 +10,8 @@
 
   = field_set_tag do
     = f.labeled_input_fields(:name, :short_name)
+    - entry.modifiable_attributes(:description).each do |attr|
+      = f.labeled_input_field attr
 
     = f.labeled(:contact_id) do
       - if @contacts.present?
@@ -22,5 +24,7 @@
         %p.text= ta(:none_available)
 
   = render 'contactable/fields', f: f
+
+  = render 'logo_fields', f: f
 
   = render_extensions :fields, locals: { f: f }

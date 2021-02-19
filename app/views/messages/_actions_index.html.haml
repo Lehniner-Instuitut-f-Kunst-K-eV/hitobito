@@ -1,0 +1,14 @@
+/ #  Copyright (c) 2012-2021, CVP Schweiz. This file is part of
+/ #  hitobito and licensed under the Affero General Public License version 3
+/ #  or later. See the COPYING file at the top-level directory or at
+/ #  https://github.com/hitobito/hitobito.
+
+- if Settings.messages.enable_writing
+
+  - if can?(:new, parent.messages.build)
+    = add_message_button(Message::Letter)
+
+    - if can?(:index_invoices, parent.group.layer_group) && parent.group.layer_group.invoice_config.valid?
+      = add_message_button(Message::LetterWithInvoice)
+
+    = add_message_button(Message::TextMessage)

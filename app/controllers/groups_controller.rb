@@ -1,16 +1,16 @@
 # encoding: utf-8
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2019, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
 
 class GroupsController < CrudController
 
-  include Concerns::AsyncDownload
+  include AsyncDownload
 
   # Respective group attrs are added in corresponding instance method.
-  self.permitted_attrs = Contactable::ACCESSIBLE_ATTRS.dup
+  self.permitted_attrs = Contactable::ACCESSIBLE_ATTRS.dup + [:logo, :remove_logo]
 
   # required to allow api calls
   protect_from_forgery with: :null_session, only: [:index, :show]
@@ -54,11 +54,9 @@ class GroupsController < CrudController
   end
 
   def export_subgroups
-    with_async_download_cookie(:csv, :subgroups_export) do |filename|
-      Export::SubgroupsExportJob.new(current_person.id, entry, filename: filename).enqueue!
+    with_async_download_cookie(:csv, :subgroups_export, redirection_target: entry) do |filename|
+      Export::SubgroupsExportJob.new(current_person.id, entry.id, filename: filename).enqueue!
     end
-
-    redirect_to entry
   end
 
   def person_notes; end

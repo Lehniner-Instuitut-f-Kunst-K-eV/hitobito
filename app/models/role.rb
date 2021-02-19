@@ -9,13 +9,18 @@
 # Table name: roles
 #
 #  id         :integer          not null, primary key
-#  person_id  :integer          not null
-#  group_id   :integer          not null
-#  type       :string(255)      not null
+#  deleted_at :datetime
 #  label      :string(255)
+#  type       :string(255)      not null
 #  created_at :datetime
 #  updated_at :datetime
-#  deleted_at :datetime
+#  group_id   :integer          not null
+#  person_id  :integer          not null
+#
+# Indexes
+#
+#  index_roles_on_person_id_and_group_id  (person_id,group_id)
+#  index_roles_on_type                    (type)
 #
 
 class Role < ActiveRecord::Base
@@ -115,7 +120,7 @@ class Role < ActiveRecord::Base
 
   def reset_primary_group
     if person.primary_group_id == group_id && person.roles.where(group_id: group_id).count == 0
-      person.update_column :primary_group_id, alternative_primary_group
+      person.update_column :primary_group_id, alternative_primary_group.try(:id)
     end
   end
 

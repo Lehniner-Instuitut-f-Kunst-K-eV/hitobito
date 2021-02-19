@@ -1,6 +1,6 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2014 Pfadibewegung Schweiz. This file is part of
+#  Copyright (c) 2014, 2019 Pfadibewegung Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -41,21 +41,23 @@ module Group::NestedSet
   end
 
   def self_and_sister_groups
-    Group.without_deleted.
-          where(parent_id: parent_id, type: type)
+    Group.without_deleted
+         .where(parent_id: parent_id, type: type)
   end
 
   # siblings with the same type and all their descendant groups, including self
   def sister_groups_with_descendants
-    Group.without_deleted.
-          joins('LEFT JOIN groups AS sister_groups ' \
-                'ON groups.lft >= sister_groups.lft AND groups.lft < sister_groups.rgt').
-          where(sister_groups: { type: type, parent_id: parent_id })
+    Group.without_deleted
+         .joins("LEFT JOIN #{Group.quoted_table_name} AS sister_groups " \
+                "ON #{Group.quoted_table_name}.lft >= sister_groups.lft " \
+                "AND #{Group.quoted_table_name}.lft < sister_groups.rgt")
+         .where(sister_groups: { type: type, parent_id: parent_id })
   end
 
   # The layer hierarchy without the layer of this group.
   def upper_layer_hierarchy
     return [] unless parent
+
     if new_record?
       if layer?
         parent.layer_hierarchy
@@ -73,12 +75,12 @@ module Group::NestedSet
   end
 
   def groups_in_same_layer
-    Group.where(layer_group_id: layer_group_id).
-          without_deleted.
-          order(:lft)
+    Group.where(layer_group_id: layer_group_id)
+         .without_deleted
+         .order(:lft)
   end
 
-  def has_sublayers?
+  def has_sublayers? # rubocop:disable Naming/PredicateName
     children.any? { |child| child.layer? }
   end
 

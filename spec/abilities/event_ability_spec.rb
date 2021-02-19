@@ -1,6 +1,6 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -497,8 +497,9 @@ describe EventAbility do
     let(:role)   { Fabricate(Group::BottomGroup::Leader.name.to_sym, group: groups(:bottom_group_one_one)) }
     let(:event)  { Fabricate(:event, groups: [groups(:bottom_layer_one)]) }
     let(:participation) { Fabricate(:event_participation, event: event, person: user) }
+    let(:event_role)    { Event::Role::Cook}
 
-    before { Fabricate(Event::Role::Cook.name.to_sym, participation: participation) }
+    before { Fabricate(event_role.name.to_sym, participation: participation) }
 
     context Event do
       it 'may show his event' do
@@ -535,7 +536,36 @@ describe EventAbility do
         other = Fabricate(:event, groups: [groups(:bottom_layer_one)])
         is_expected.not_to be_able_to(:index_participations, other)
       end
+    end
 
+    context Event::Role::Participant do
+      let(:event_role) { Event::Role::Participant }
+
+      before { participation.update(active: true) }
+
+      context Event do
+        it 'may index people for his event with visible participations' do
+          event.update(participations_visible: true)
+          expect(event).to be_participations_visible
+
+          is_expected.to be_able_to(:index_participations, event)
+        end
+
+        it 'may not index people for his event with invisible participations' do
+          event.update(participations_visible: false)
+          expect(event).not_to be_participations_visible
+
+          is_expected.not_to be_able_to(:index_participations, event)
+        end
+      end
+
+      context Event::Course do
+        let(:event) { Fabricate(:course) }
+
+        it 'may index people for his event' do
+          is_expected.to be_able_to(:index_participations, event)
+        end
+      end
     end
 
     context Event::Participation do

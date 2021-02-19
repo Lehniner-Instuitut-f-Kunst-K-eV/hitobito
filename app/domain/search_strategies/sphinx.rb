@@ -33,6 +33,11 @@ module SearchStrategies
                    default_search_options.merge(sql: sql))
     end
 
+    def query_addresses
+      return Address.none.page(1) if @term.blank?
+      Address.search(Riddle::Query.escape(@term), default_search_options.merge(match_mode: :phrase))
+    end
+
     protected
 
     def default_search_options
@@ -45,7 +50,7 @@ module SearchStrategies
                     page: @page,
                     order: 'last_name asc, ' \
                            'first_name asc, ' \
-                           "#{ThinkingSphinx::SphinxQL.weight[:select]} desc",
+                           'weight() desc',
                     star: star_supported?,
                     with: { sphinx_internal_id: ids })
     end

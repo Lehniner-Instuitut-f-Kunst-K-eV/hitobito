@@ -29,6 +29,19 @@ module Subscriber
       load_role_types
     end
 
+    def edit
+      @selected_group ||= Group.find(entry.subscriber_id)
+      load_role_types
+    end
+
+    def update
+      super do |format|
+        format.html do
+          redirect_to(group_mailing_list_subscriptions_path(mailing_list.group, mailing_list))
+        end
+      end
+    end
+
     private
 
     def groups_query
@@ -36,7 +49,7 @@ module Subscriber
       possible.where(search_condition('groups.name', 'parents_groups.name')).
                includes(:parent).
                references(:parent).
-               order('groups.lft').
+               order("#{Group.quoted_table_name}.lft").
                limit(10)
     end
 
@@ -44,7 +57,7 @@ module Subscriber
       super
       if model_params
         entry.role_types = model_params[:role_types]
-        entry.tag_list = model_params[:tag_list]
+        entry.subscription_tags = subscription_tags
       end
     end
 
@@ -53,9 +66,7 @@ module Subscriber
     end
 
     def load_possible_tags
-      @possible_tags ||= Person.tags_on(:tags)
-        .order(:name)
-        .pluck(:name)
+      @possible_tags ||= PersonTags::Translator.new.possible_tags
     end
 
     def subscriber
@@ -71,5 +82,23 @@ module Subscriber
       end
     end
 
+    def subscription_tags
+      tags = collect_included_tags + collect_excluded_tags
+      tags.map do |tag|
+        next if tag[:id].empty?
+
+        SubscriptionTag.new(subscription: entry,
+                            tag_id: tag[:id],
+                            excluded: tag[:excluded])
+      end.compact
+    end
+
+    def collect_included_tags
+      model_params[:included_subscription_tags_ids]&.map { |id| { id: id, excluded: false } } || []
+    end
+
+    def collect_excluded_tags
+      model_params[:excluded_subscription_tags_ids]&.map { |id| { id: id, excluded: true } } || []
+    end
   end
 end

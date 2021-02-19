@@ -9,22 +9,26 @@
 # Table name: additional_emails
 #
 #  id               :integer          not null, primary key
-#  contactable_id   :integer          not null
 #  contactable_type :string(255)      not null
 #  email            :string(255)      not null
 #  label            :string(255)
-#  public           :boolean          default(TRUE), not null
 #  mailings         :boolean          default(FALSE), not null
+#  public           :boolean          default(TRUE), not null
+#  contactable_id   :integer          not null
+#
+# Indexes
+#
+#  index_additional_emails_on_contactable_id_and_contactable_type  (contactable_id,contactable_type)
 #
 
 class AdditionalEmail < ActiveRecord::Base
 
   include ContactAccount
+  include ValidatedEmail
 
   self.value_attr = :email
 
   validates_by_schema
-  validates :email, format: Devise.email_regexp
 
   # A dot at the end is invalid due to translation purpose
   validates :label, format: { without: /[.]$\z/ }

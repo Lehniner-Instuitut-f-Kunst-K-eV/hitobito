@@ -9,14 +9,15 @@ class FullTextController < ApplicationController
 
   skip_authorization_check
 
-  helper_method :entries
+  helper_method :entries, :tab_class
 
   respond_to :html
 
   def index
     @people = with_query { search_strategy.list_people }
     @groups = with_query { search_strategy.query_groups }
-    @events = with_query { search_strategy.query_events }
+    @events = with_query { decorate_events(search_strategy.query_events) }
+    @active_tab = active_tab
   end
 
   def query
@@ -57,5 +58,23 @@ class FullTextController < ApplicationController
 
   def with_query
     params[:q].to_s.size >= 2 ? yield : []
+  end
+
+  def active_tab
+    return :people if @people.present?
+    return :groups if @groups.present?
+    return :events if @events.present?
+
+    :people
+  end
+
+  def tab_class(tab)
+    'active' if @active_tab == tab
+  end
+
+  def decorate_events(events)
+    events.map do |event|
+      EventDecorator.new(event)
+    end
   end
 end

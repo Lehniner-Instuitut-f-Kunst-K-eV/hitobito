@@ -1,7 +1,7 @@
 en:
   time:
     formats:
-      time: "%H:%M"
+      time: "%H:%M:%S"
       date_time: "%d.%m.%Y %H:%M"
       month_year: '%B %Y'
   date:
@@ -15,7 +15,6 @@ en:
         delimiter: ''''
         format: '%u %n'
         separator: .
-        unit: CHF
     format:
       delimiter: ''''
       separator: .
@@ -52,25 +51,24 @@ en:
           attributes:
             choices:
               requires_more_than_one_choice: 'needs at least two picks'
+              requires_exactly_one_choice: 'must contain exactly one answer'
         event/participation:
-          emoji_suspected: 'Please don''t use any special characters (especially emojis).'
           attributes:
             person_id:
               taken: is already registered
-        mailing_list:
+        oauth/application:
           attributes:
-            mail_name:
-              not_allowed: "'%{mail_name}' is not allowed"
+            scopes:
+              not_match_configured: "do not match the ones configured on the server"
         person:
           name_missing: 'Please enter a name'
-          emoji_suspected: 'Please don''t use any special characters (especially emojis).'
           attributes:
             email:
               taken: >
-                is already taken. This address must be unique for every person, because
-                it is used when logging in. Under 'Further e-mail" you may specify
-                addresses, which are assigned to other people as main e-mail (the
-                main e-mail can be left blank).
+                  is already taken. This address must be unique for every person,
+                  because it is used when logging in. Under 'Further e-mail" you may
+                  specify addresses, which are assigned to other people as main e-mail
+                  (the main e-mail can be left blank).
         person/add_request:
           attributes:
             person_id:
@@ -83,10 +81,6 @@ en:
           attributes:
             qualification_kind_id:
               exists_for_timeframe: 'already exists in this period'
-        qualification_kind:
-          attributes:
-            validity:
-              not_a_positive_number: 'must be a positive number in order to reactivate the %{model}.'
         subscription:
           attributes:
             subscriber_id:
@@ -96,6 +90,14 @@ en:
           attributes:
             name:
               must_be_unique: 'already exists'
+        invoice_config:
+          attributes:
+            iban:
+              required: 'is required'
+            account_number:
+              required: 'is required'
+            payee:
+              to_long: 'is too long, may only have 2 lines'
     models:
       acts_as_taggable_on/tag:
         one: Tag
@@ -124,6 +126,9 @@ en:
       event/kind:
         one: Course type
         other: Course types
+      event/role:
+        one: Role
+        other: Roles
       event/role/assistant_leader:
         one: Leader
         other: Leaders
@@ -151,18 +156,57 @@ en:
       group:
         one: Group
         other: Groups
+      group_setting:
+        one: Setting
+        other: Settings
+      help_text:
+        one: Helptext
+        other: Helptexts
+      invoice:
+        one: Invoice
+        other: Invoices
+      invoice_article:
+        one: Invoice item
+        other: Invoice items
+      invoice_config:
+        one: Invoice setting
+        other: Invoice settings
+      invoice_item:
+        one: Invoice Item
+        other: Invoice Items
       label_format:
         one: Label format
         other: Label formats
+      message:
+        one: Message
+        other: Messages
+      mail_log:
+        one: Log
+        other: Logs
       mailing_list:
         one: Subscription
         other: Subscriptions
       note:
         one: Note
         other: Notes
+      payment:
+        one: Payment
+        other: Payments
+      oauth/application:
+        one: OAuth application
+        other: OAuth applications
+      oauth/access_token:
+        one: OAuth access token
+        other: OAuth access tokens
+      oauth/access_grant:
+        one: OAuth access grant
+        other: OAuth access grants
+      payment_reminder:
+        one: payment reminder
+        other: payment reminders
       person:
         one: Person
-        other: Persons
+        other: People
       person/add_request:
         one: request
         other: requests
@@ -184,6 +228,9 @@ en:
       role:
         one: Role
         other: Roles
+      service_token:
+        one: API-Key
+        other: API-Keys
       social_account:
         one: Social Media
         other: Social Media
@@ -191,11 +238,9 @@ en:
         one: Subscriber
         other: Subscribers
       tag:
-        one: tag
-        other: tags
+        one: Tag
+        other: Tags
     attributes:
-      acts_as_taggable_on/tag:
-        name: name
       cantons:
         ag: Aargau
         ai: Appenzell Innerrhoden
@@ -281,12 +326,16 @@ en:
         phone_numbers: Phone numbers
         social_accounts: Social Media
         additional_emails: Further e-mails
+        layer_group: Level
         parent_id: Parents group
         layer_group_id: Level
         type: Group type
         type_name: Group type
+        description: Description
       event:
         group_ids: Groups
+        groups: groups
+        state: state
         name: Name
         number: Number
         motto: Motto
@@ -313,6 +362,8 @@ en:
         applicant_count: Registrations count
         applications_cancelable: Deregistration possible
         display_booking_info: Display number of registrations
+        participations_visible: Visibility of participants
+        waiting_list: Waiting list
       event/contact_attrs:
         required: Mandatory
         optional: Optional
@@ -359,7 +410,7 @@ en:
       event/participation:
         person_id: Person
         event_id: Event
-        additional_information: Comments (general, health information, allergies, etc.)
+        additional_information: Comments
         answers: Questions
         created_at: Registration date
         roles: Role
@@ -385,6 +436,16 @@ en:
         participation: Person
       note:
         text: Text
+      oauth/application:
+        redirect_uri: redirect URIs
+      people_relation:
+        head_id: Person
+        tail_id: Other person
+        kind: Type
+      phone_number:
+        number: Number
+        label: Type
+        public: Public
       qualification:
         qualification_kind: Qualification
         qualification_kind_id: Qualification
@@ -402,21 +463,15 @@ en:
         updated_at: Changed
         deleted_at: Deleted
         reactivateable: Reactivateable
-      people_relation:
-        head_id: Person
-        tail_id: Other person
-        kind: Type
       relations_to_tails:
         tail_id: Relation
         kind: Type
-      phone_number:
-        number: Number
-        label: Type
-        public: Public
       phone_numbers:
         number: Phone number
         label: Phone number type
         public: Public
+      group_setting:
+        var: Settings
       role:
         label: Description
         type: Role
@@ -436,9 +491,9 @@ en:
               group_and_below_read: 'All reading at this group and all lower groups (without layers). '
               group_full: Reading and writing at this group. Creating events and subscriptions at this group.
               group_read: Reading at this group.
-              contact_data: Read the contact details of all other persons with contact data authorization.
-              qualify: Creating qualifications for persons at this level and all lower levels.
-              approve_applications: Confirmation of course registrations for persons at this level.
+              contact_data: Read the contact details of all other people with contact data authorization.
+              qualify: Creating qualifications for people at this level and all lower levels.
+              approve_applications: Confirmation of course registrations for people at this level.
           kind:
             member:
               one: Member
@@ -510,9 +565,20 @@ en:
         dimensions: Number
         nickname: Nickname on label
         pp_post: PP-Line
-      tag:
+      invoice:
+        invoice_config: Invoice setting
+        state: State
+      acts_as_taggable_on/tag:
+        taggings_count: Number
+        category: Category
         name: name
-        taggable_id: taggable
+  doorkeeper:
+    scopes:
+      email: Read your e-mail address
+      name: Read your e-mail address and name
+      with_roles: Read your base data and roles
+      openid: Read your OIDC Identity Token
+      api: Read all people, groups, events and invoices to which you have access, via the JSON-interfaces
   errors:
     messages:
       invalid_date: "is not a valid date"
@@ -523,7 +589,6 @@ en:
       on_or_before: "must be on or before %{restriction}"
       after: "must be after %{restriction}"
       on_or_after: "must be on or after %{restriction}"
-      extension_white_list_error: "only accepts the following type of files: %{allowed_types}"
       dimensions_too_large: "only accepts images with a size smaller than  %{maximum} pixel"
       filesize_too_large: "can not be bigger than  %{maximum} mb"
       expired: "has expired, please request a new"

@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -17,12 +17,13 @@
 class CustomContent < ActiveRecord::Base
 
   include Globalized
-  translates :label, :subject, :body
+  translates :label, :subject
+  translates_rich_text :body
 
   # specify validations for translated attributes explicitly
   validates :label, presence: true
   validates :label, :subject, length: { maximum: 255, allow_nil: true }
-  validates :body, length: { allow_nil: true, maximum: 2**16 - 1 }
+  validates :body, length: { allow_nil: true, maximum: 2**16 - 1 }, no_attachments: true
   validates_by_schema
 
   validate :assert_required_placeholders_are_used
@@ -58,7 +59,7 @@ class CustomContent < ActiveRecord::Base
   end
 
   def body_with_values(placeholders = {})
-    replace_placeholders(body.dup, placeholders)
+    replace_placeholders(body.to_s, placeholders)
   end
 
   private
@@ -80,7 +81,7 @@ class CustomContent < ActiveRecord::Base
 
   def assert_required_placeholders_are_used
     placeholders_required_list.each do |placeholder|
-      unless [subject, body].any? { |str| str.to_s.include?(placeholder_token(placeholder)) }
+      unless [subject, body.to_s].any? { |str| str.to_s.include?(placeholder_token(placeholder)) }
         errors.add(:body, :placeholder_missing, placeholder: placeholder_token(placeholder))
       end
     end

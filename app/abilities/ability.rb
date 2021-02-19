@@ -8,11 +8,13 @@
 class Ability
 
   include CanCan::Ability
+  prepend Draper::CanCanCan
 
   cattr_reader :store
   @@store = AbilityDsl::Store.new
 
-  store.register EventAbility,
+  store.register AssignmentAbility,
+                 EventAbility,
                  Event::ApplicationAbility,
                  Event::ParticipationAbility,
                  Event::ParticipationContactDataAbility,
@@ -20,13 +22,18 @@ class Ability
                  GroupAbility,
                  InvoiceAbility,
                  MailingListAbility,
+                 MessageAbility,
                  NoteAbility,
+                 OauthAbility,
                  PeopleFilterAbility,
                  PersonAbility,
+                 PersonDuplicateAbility,
                  Person::AddRequestAbility,
                  QualificationAbility,
                  RoleAbility,
+                 ServiceTokenAbility,
                  SubscriptionAbility,
+                 TagAbility,
                  VariousAbility
 
   attr_reader :user, :user_context

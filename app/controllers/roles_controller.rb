@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -23,11 +23,9 @@ class RolesController < CrudController
   before_render_form :set_group_selection
   before_render_create :set_group_selection
 
-  before_action :set_person_id, only: [:new]
+  before_action :set_person_id, only: [:new] # rubocop:disable Rails/LexicallyScopedActionFilter
   before_action :remember_primary_group, only: [:destroy]
   after_destroy :last_primary_group_role_deleted
-
-  hide_action :index, :show
 
   def create
     assign_attributes
@@ -65,7 +63,7 @@ class RolesController < CrudController
   def role_types
     authorize!(:role_types, Role)
     @group = Group.find(params.fetch(:role, {})[:group_id])
-    @type ||= @group.default_role
+    @type ||= @group.default_role # rubocop:disable Naming/MemoizedInstanceVariableName
   end
 
   private
@@ -163,14 +161,13 @@ class RolesController < CrudController
   end
 
   def build_person(role)
-    person_attrs = extract_model_attr(:new_person) || {}
+    person_attrs = extract_model_attr(:new_person) || ActionController::Parameters.new
     person_id = extract_model_attr(:person_id)
     if person_id.present?
       role.person_id = person_id
       role.person = Person.new unless role.person
     else
-      attrs = ActionController::Parameters.new(person_attrs)
-                                          .permit(*PeopleController.permitted_attrs)
+      attrs = person_attrs.permit(*PeopleController.permitted_attrs)
       role.person = Person.new(attrs)
     end
   end
@@ -185,7 +182,7 @@ class RolesController < CrudController
   end
 
   def extract_model_attr(attr)
-    model_params && model_params.delete(attr)
+    model_params&.delete(attr)
   end
 
   # A label for the current entry, including the model name, used for flash
@@ -203,12 +200,12 @@ class RolesController < CrudController
   end
 
   def after_create_location(new_person)
-    return_path ||
-      if new_person && entry.person && entry.person.persisted?
-        group_person_path(entry.group_id, entry.person_id)
-      else
-        group_people_path(entry.group_id)
-      end
+    return return_path if return_path.present?
+    return new_group_role_path(entry.group_id) if params.key?(:add_another)
+    return edit_group_person_path(entry.group_id, entry.person_id) if new_person &&
+      entry.person.try(:persisted?)
+
+    group_people_path(entry.group_id)
   end
 
   def after_update_location

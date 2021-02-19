@@ -1,6 +1,6 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -9,14 +9,21 @@
 # Table name: event_participations
 #
 #  id                     :integer          not null, primary key
-#  event_id               :integer          not null
-#  person_id              :integer          not null
-#  additional_information :text(65535)
+#  active                 :boolean          default(FALSE), not null
+#  additional_information :text(16777215)
+#  qualified              :boolean
 #  created_at             :datetime
 #  updated_at             :datetime
-#  active                 :boolean          default(FALSE), not null
 #  application_id         :integer
-#  qualified              :boolean
+#  event_id               :integer          not null
+#  person_id              :integer          not null
+#
+# Indexes
+#
+#  index_event_participations_on_application_id          (application_id)
+#  index_event_participations_on_event_id                (event_id)
+#  index_event_participations_on_event_id_and_person_id  (event_id,person_id) UNIQUE
+#  index_event_participations_on_person_id               (person_id)
 #
 
 class Event::Participation < ActiveRecord::Base
@@ -64,16 +71,18 @@ class Event::Participation < ActiveRecord::Base
   class << self
     # Order people by the order participation types are listed in their event types.
     def order_by_role(event_type)
-      joins(:roles).order(order_by_role_statement(event_type))
+      joins(:roles).order(Arel.sql(order_by_role_statement(event_type)))
     end
 
     def order_by_role_statement(event_type)
-      return if event_type.role_types.blank?
-      statement = 'CASE event_roles.type '
+      return '' if event_type.role_types.blank?
+
+      statement = ['CASE event_roles.type']
       event_type.role_types.each_with_index do |t, i|
-        statement << "WHEN '#{t.sti_name}' THEN #{i} "
+        statement << "WHEN '#{t.sti_name}' THEN #{i}"
       end
       statement << 'END'
+      statement.join(' ')
     end
 
     def active
@@ -85,7 +94,7 @@ class Event::Participation < ActiveRecord::Base
     end
 
     def upcoming
-      joins(event: :dates).where('event_dates.start_at >= ?', ::Time.zone.today).uniq
+      joins(:event).merge(Event.upcoming(::Time.zone.today)).distinct
     end
 
   end
@@ -97,6 +106,7 @@ class Event::Participation < ActiveRecord::Base
     answers.tap do |list|
       event.questions.each do |q|
         next if list.find { |a| a.question_id == q.id }
+
         a = q.answers.new
         a.question = q # without this, only the id is set
         list << a
@@ -109,21 +119,20 @@ class Event::Participation < ActiveRecord::Base
 
     (application || build_application).tap do |appl|
       appl.priority_1 = event
+      if directly_to_waiting_list?(event)
+        appl.waiting_list = true
+        appl.waiting_list_comment = I18n.t('event/applications.directly_to_waiting_list')
+      end
     end
   end
 
   def applying_participant?
-    role = roles.first
-    event.supports_applications && (application_id || role && role.class.participant?)
+    first_role_class = roles.first&.class
+    event.supports_applications && (application_id || first_role_class&.participant?)
   end
 
-  # Overwrite to handle improper characters
-  def save(*args)
-    super
-  rescue ActiveRecord::StatementInvalid => e
-    raise e unless e.original_exception.message =~ /Incorrect string value/
-    errors.add(:base, :emoji_suspected)
-    false
+  def waiting_list?
+    application&.waiting_list? || false
   end
 
   private
@@ -141,5 +150,9 @@ class Event::Participation < ActiveRecord::Base
 
   def update_participant_count
     event.refresh_participant_counts!
+  end
+
+  def directly_to_waiting_list?(event)
+    !event.places_available? && event.waiting_list_available?
   end
 end

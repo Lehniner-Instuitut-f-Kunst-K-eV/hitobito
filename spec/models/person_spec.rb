@@ -72,11 +72,10 @@ describe Person do
     expect(Person.new(company: false, company_name: 'foo')).to have(1).errors_on(:base)
   end
 
-  it 'cannot be saved with emoji', :mysql do
+  it 'can be saved with emoji', :mysql do
     person = Person.new(company: false, nickname: 'foo', additional_information: ' Vegetarier😝 ')
-    expect(person.save).to be false
-    expect(person.errors.messages[:base].size).to be 1
-    expect(person.errors.messages[:base].first).to match /emoji/i
+    expect(person.save).to be true
+    expect(person.errors.messages[:base].size).to be_zero
   end
 
   it 'with login role does not require email' do
@@ -240,16 +239,6 @@ describe Person do
 
     it 'can reset password' do
       expect { person.send_reset_password_instructions }.to change { ActionMailer::Base.deliveries.size }.by(1)
-    end
-  end
-
-  context 'email validation' do
-    it 'can create two people with empty email' do
-      expect { 2.times { Fabricate(:person, email: '') }  }.to change { Person.count }.by(2)
-    end
-
-    it 'cannot create two people same email' do
-      expect { 2.times { Fabricate(:person, email: 'foo@bar.com') }  }.to raise_error(ActiveRecord::RecordInvalid)
     end
   end
 
@@ -487,18 +476,182 @@ describe Person do
     expect(people(:bottom_member).finance_groups).to eq [groups(:bottom_layer_one)]
   end
 
-  it '#filter_attrs_list returns list of filterable attributes' do
-    expect(Person.filter_attrs_list).to include(['Vorname', :first_name])
-    expect(Person.filter_attrs_list).to include(['Nachname', :last_name])
-    expect(Person.filter_attrs_list).to include(['Übername', :nickname])
-    expect(Person.filter_attrs_list).to include(['Firmenname', :company_name])
-    expect(Person.filter_attrs_list).to include(['Haupt-E-Mail', :email])
-    expect(Person.filter_attrs_list).to include(['Adresse', :address])
-    expect(Person.filter_attrs_list).to include(['PLZ', :zip_code])
-    expect(Person.filter_attrs_list).to include(['Ort', :town])
-    expect(Person.filter_attrs_list).to include(['Land', :country])
+  it '#filter_attrs returns list of filterable attributes' do
+    attrs = Person.filter_attrs
+    expect(attrs[:first_name]).to eq(label: 'Vorname', type: :string)
+    expect(attrs[:last_name]).to eq(label: 'Nachname', type: :string)
+    expect(attrs[:nickname]).to eq(label: 'Übername', type: :string)
+    expect(attrs[:company_name]).to eq(label: 'Firmenname', type: :string)
+    expect(attrs[:email]).to eq(label: 'Haupt-E-Mail', type: :string)
+    expect(attrs[:address]).to eq(label: 'Adresse', type: :text)
+    expect(attrs[:zip_code]).to eq(label: 'PLZ', type: :string)
+    expect(attrs[:town]).to eq(label: 'Ort', type: :string)
+    expect(attrs[:country]).to eq(label: 'Land', type: :string)
 
-    expect(Person.filter_attrs_list.count).to eq(Person::FILTER_ATTRS.count)
+    expect(Person.filter_attrs.count).to eq(Person::FILTER_ATTRS.count)
+  end
+
+  it '#filter_attrs is controlled by attributes define in Person::FILTER_ATTRS' do
+    stub_const("Person::FILTER_ATTRS", [:first_name, [:active_years, :custom_type]])
+    attrs = Person.filter_attrs
+    expect(attrs[:first_name]).to eq(label: 'Vorname', type: :string)
+    expect(attrs[:active_years]).to eq(label: 'Active years', type: :custom_type)
+  end
+
+  describe '#picture' do
+    include CarrierWave::Test::Matchers
+    let(:person) { Fabricate(:person) }
+
+    before do
+      person.picture.store!(File.open('spec/fixtures/person/test_picture.jpg'))
+    end
+
+    describe 'default' do
+      it "scales down an image to be exactly 32 by 32 pixels" do
+        expect(person.picture.thumb).to be_no_larger_than(32, 32)
+      end
+    end
+
+    describe '#thumb' do
+      it "scales down an image to be no wider than 512 pixels" do
+        expect(person.picture).to have_dimensions(512, 512)
+      end
+    end
+  end
+
+  describe 'e-mail validation' do
+
+    let(:person) { people(:top_leader) }
+
+    before { allow(Truemail).to receive(:valid?).and_call_original }
+
+    it 'does not allow invalid e-mail address' do
+      person.email = 'blabliblu-ke-email'
+
+      expect(person).not_to be_valid
+      expect(person.errors.messages[:email].first).to eq('ist nicht gültig')
+    end
+
+    it 'allows blank e-mail address' do
+      person.email = '   '
+
+      expect(person).to be_valid
+      expect(person.email).to be_nil
+    end
+
+    it 'can create two people with empty email' do
+      expect { 2.times { Fabricate(:person, email: '') }  }.to change { Person.count }.by(2)
+    end
+
+    it 'cannot create two people with same email' do
+      expect { 2.times { Fabricate(:person, email: 'foo@bar.com') }  }.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
+    it 'does not allow e-mail address with non-existing domain' do
+      person.email = 'dude@gitsäuäniä.it'
+
+      expect(person).not_to be_valid
+      expect(person.errors.messages[:email].first).to eq('ist nicht gültig')
+    end
+
+    it 'does not allow e-mail address with domain without mx record' do
+      person.email = 'dude@bluewin.com'
+
+      expect(person).not_to be_valid
+      expect(person.errors.messages[:email].first).to eq('ist nicht gültig')
+    end
+
+    it 'does allow valid e-mail address' do
+      person.email = 'dude@puzzle.ch'
+
+      expect(person).to be_valid
+    end
+  end
+
+  describe 'invalid e-mail tags' do
+    let(:person) { people(:top_leader) }
+    let(:taggings) do
+      ActsAsTaggableOn::Tagging
+        .where(taggable: person)
+    end
+
+    before { allow(Truemail).to receive(:valid?).and_call_original }
+
+    before do
+      person.email = 'not-an-email'
+      person.save!(validate: false)
+    end
+
+    before do
+      AdditionalEmail
+        .new(contactable: person,
+             email: 'no-email@no-domain')
+        .save!(validate: false)
+    end
+
+    before { Contactable::EmailValidator.new.validate_people }
+
+    it 'removes invalid e-mail tags when saving' do
+      expect(taggings.count).to eq(2)
+
+      person.email = 'info@hitobito.ch'
+      person.additional_emails.first.email = 'hitobito@puzzle.ch'
+      person.save!
+
+      expect(taggings.reload.count).to eq(0)
+    end
+
+  end
+
+  describe 'invalid address tags' do
+    let (:person) { people(:bottom_member) }
+    let(:taggings) do
+      ActsAsTaggableOn::Tagging
+        .where(taggable: person)
+    end
+
+    before { Contactable::AddressValidator.new.validate_people }
+
+    it 'removes invalid address tags when saving new address' do
+      expect(taggings.count).to eq(1)
+
+      person.address = 'Belpstrasse 37'
+      person.save!
+
+      expect(taggings.reload.count).to eq(0)
+    end
+
+    it 'removes invalid address tags when saving new town' do
+      expect(taggings.count).to eq(1)
+
+      person.town = 'Bern'
+      person.save!
+
+      expect(taggings.reload.count).to eq(0)
+    end
+
+    it 'removes invalid address tags when saving new zip_code' do
+      expect(taggings.count).to eq(1)
+
+      person.zip_code = 3007
+      person.save!
+
+      expect(taggings.reload.count).to eq(0)
+    end
+  end
+
+  describe 'person_duplicates' do
+    let!(:duplicate1) { Fabricate(:person_duplicate) }
+    let!(:duplicate2) do
+      PersonDuplicate.create!(person_1: person_1, person_2: people(:top_leader))
+    end
+    let(:person_1) { duplicate1.person_1 }
+
+    it 'deletes person duplicates if person is deleted' do
+      expect do
+        person_1.destroy!
+      end.to change(PersonDuplicate, :count).by(-2)
+    end
   end
 
 end

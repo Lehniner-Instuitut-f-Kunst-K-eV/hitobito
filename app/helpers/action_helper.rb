@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2015, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -30,7 +30,7 @@ module ActionHelper
     path ||= path_args(entry)
     options[:data] ||= {}
     options[:data].reverse_merge!(confirm: ti(:confirm_delete), method: :delete)
-    action_button ti(:"link.delete"), path, 'trash', options
+    action_button ti(:"link.delete"), path, 'trash-alt', options
   end
 
   # Standard button action to the list page.
@@ -55,17 +55,19 @@ module ActionHelper
 
   # Standard link action to the edit page of a given record.
   # Uses the current record if none is given.
-  def link_action_edit(path = nil)
+  def link_action_edit(path = nil, options = {})
     path ||= path_args(entry)
+    remote = options[:remote]
     link_to(icon(:edit),
             path.is_a?(String) ? path : edit_polymorphic_path(path),
             title: ti(:"link.edit"),
-            alt: ti(:"link.edit"))
+            alt: ti(:"link.edit"),
+            remote: remote)
   end
 
   # Standard link action to the destroy action of a given record.
   # Uses the current record if none is given.
-  def link_action_destroy(path = nil, label = icon(:trash))
+  def link_action_destroy(path = nil, label = icon(:'trash-alt', filled: false))
     path ||= path_args(entry)
     link_to label,
             path,

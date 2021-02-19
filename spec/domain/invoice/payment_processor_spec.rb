@@ -5,11 +5,11 @@ describe Invoice::PaymentProcessor do
   let(:invoice)        { invoices(:sent) }
   let(:invoice_config) { invoice.invoice_config }
 
-  it 'parses 5 debit statements' do
-    expect(parser.debit_statements).to have(5).items
+  it 'parses 5 credit statements' do
+    expect(parser.credit_statements).to have(5).items
   end
 
-  it 'builds payments for each debit statement' do
+  it 'builds payments for each credit statement' do
     expect(parser.payments).to have(5).items
     parser.payments.each do |payment|
       expect(payment).not_to be_valid
@@ -17,13 +17,13 @@ describe Invoice::PaymentProcessor do
   end
 
   it 'first payment is marked as valid' do
-    invoice.update_columns(esr_number: '00 00000 00000 10000 00000 00905')
+    invoice.update_columns(reference: '000000000000100000000000905')
     payment = parser.payments.first
     expect(payment).to be_valid
   end
 
   it 'creates payment and marks invoice as payed' do
-    invoice.update_columns(esr_number: '00 00000 00000 10000 00000 00905',
+    invoice.update_columns(reference: '000000000000100000000000905',
                            total: 710.82)
     expect do
       expect(parser.process).to eq 1
@@ -31,13 +31,27 @@ describe Invoice::PaymentProcessor do
     expect(invoice.reload).to be_payed
   end
 
+  it 'creates payment and marks invoice as payed and updates invoice_list' do
+    list = InvoiceList.create!(title: :title, group: invoice.group)
+    invoice.update_columns(reference: '000000000000100000000000905',
+                           invoice_list_id: list.id,
+                           total: 710.82)
+    expect do
+      expect(parser.process).to eq 1
+    end.to change { Payment.count }.by(1)
+    expect(invoice.reload).to be_payed
+    expect(list.reload.amount_paid.to_s).to eq '710.82'
+    expect(list.reload.recipients_paid).to eq 1
+  end
+
+
   it 'invalid payments only produce set alert' do
     expect(parser.alert).to be_present
     expect(parser.notice).to be_blank
   end
 
   it 'invalid and valid payments set alert and notice' do
-    invoice.update_columns(esr_number: '00 00000 00000 10000 00000 00905')
+    invoice.update_columns(reference: '000000000000100000000000905')
     expect(parser.alert).to be_present
     expect(parser.notice).to be_present
   end

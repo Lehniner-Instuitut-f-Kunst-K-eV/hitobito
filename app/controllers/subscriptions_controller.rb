@@ -1,14 +1,14 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2021, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
 
 class SubscriptionsController < CrudController
 
-  include Concerns::RenderPeopleExports
-  include Concerns::AsyncDownload
+  include RenderPeopleExports
+  include AsyncDownload
 
   self.nesting = Group, MailingList
 
@@ -18,15 +18,15 @@ class SubscriptionsController < CrudController
 
   alias mailing_list parent
 
-  def index # rubocop:disable Metrics/MethodLength there are a lof of formats supported
+  def index # rubocop:disable Metrics/AbcSize,Metrics/MethodLength there are a lof of formats supported
     respond_to do |format|
       format.html do
         @person_add_requests = fetch_person_add_requests
         load_grouped_subscriptions
       end
       format.pdf   { render_pdf(ordered_people, parents.first) }
-      format.csv   { render_tabular_in_background(:csv)  && redirect_to(action: :index) }
-      format.xlsx  { render_tabular_in_background(:xlsx) && redirect_to(action: :index) }
+      format.csv   { render_tabular_in_background(:csv) }
+      format.xlsx  { render_tabular_in_background(:xlsx) }
       format.vcf   { render_vcf(ordered_people.includes(:phone_numbers, :additional_emails)) }
       format.email { render_emails(ordered_people.includes(:additional_emails)) }
     end
@@ -48,7 +48,7 @@ class SubscriptionsController < CrudController
   # Override so we can pass preferred_labels from mailing_list
   def render_emails(people)
     emails = Person.mailing_emails_for(people, parent.labels)
-    render text: emails.join(',')
+    render plain: emails.join(',')
   end
 
   def render_tabular_in_background(format)
@@ -60,14 +60,10 @@ class SubscriptionsController < CrudController
     end
   end
 
-  def prepare_tabular_entries(people)
-    people.preload_public_accounts.includes(roles: :group)
-  end
-
   def group_subscriptions
     subscriptions_for_type(Group).
       includes(:related_role_types).
-      order('groups.name')
+      order("#{Group.quoted_table_name}.name")
   end
 
   def person_subscriptions(excluded = false)
@@ -77,15 +73,17 @@ class SubscriptionsController < CrudController
   end
 
   def event_subscriptions
-    subscriptions_for_type(Event).order('events.name')
+    subscriptions_for_type(Event)
+      .joins('LEFT JOIN event_translations ON events.id = event_translations.event_id')
+      .order('event_translations.name')
   end
 
   def subscriptions_for_type(klass)
-    mailing_list.subscriptions.
-      where(subscriber_type: klass.name).
-      joins("INNER JOIN #{klass.table_name} " \
-            "ON #{klass.table_name}.id = subscriptions.subscriber_id").
-      includes(:subscriber)
+    mailing_list
+      .subscriptions
+      .where(subscriber_type: klass.sti_name)
+      .joins("INNER JOIN #{klass.quoted_table_name} " \
+             "ON #{klass.quoted_table_name}.id = subscriptions.subscriber_id")
   end
 
   def authorize_class

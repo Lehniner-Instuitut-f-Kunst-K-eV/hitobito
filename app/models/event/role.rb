@@ -9,14 +9,19 @@
 # Table name: event_roles
 #
 #  id               :integer          not null, primary key
+#  label            :string(255)
 #  type             :string(255)      not null
 #  participation_id :integer          not null
-#  label            :string(255)
+#
+# Indexes
+#
+#  index_event_roles_on_participation_id  (participation_id)
+#  index_event_roles_on_type              (type)
 #
 
 class Event::Role < ActiveRecord::Base
 
-  # rubocop:disable ConstantName
+  # rubocop:disable Naming/ConstantName,Style/MutableConstant
 
   Permissions = [:event_full, :participations_full, :participations_read, :qualify]
 
@@ -25,7 +30,7 @@ class Event::Role < ActiveRecord::Base
   # kind nil is for restricted roles.
   Kinds = [:leader, :helper, :participant]
 
-  # rubocop:enable ConstantName
+  # rubocop:enable Naming/ConstantName,Style/MutableConstant
 
   include NormalizedLabels
 
@@ -61,6 +66,7 @@ class Event::Role < ActiveRecord::Base
   ### CALLBACKS
 
   after_create :set_participation_active
+  after_update :update_participant_count, if: :type_previously_changed?
   before_destroy :protect_applying_participant
   after_destroy :destroy_participation_for_last
 
@@ -115,24 +121,25 @@ class Event::Role < ActiveRecord::Base
 
   # A participation with at least one role is active
   def set_participation_active
-    participation.update_attribute(:active, true) unless applying_participant?
+    participation.update_attribute(:active, true) unless applying_participant? # rubocop:disable Rails/SkipsModelValidations
     update_participant_count
   end
 
   def destroy_participation_for_last
     # prevent callback loops
     return if @_destroying
+
     @_destroying = true
 
     update_participant_count
-    participation.destroy unless participation.roles(true).exists?
+    participation.destroy unless participation.roles.reload.exists?
   end
 
   def protect_applying_participant
     return if destroyed_by_participation?
 
     if applying_participant? && participation.roles == [self]
-      participation.update_attribute(:active, false)
+      participation.update_attribute(:active, false) # rubocop:disable Rails/SkipsModelValidations
       update_participant_count
       false # do not destroy
     end

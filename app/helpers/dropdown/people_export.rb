@@ -19,6 +19,7 @@ module Dropdown
       @email_addresses = options[:emails]
       @labels = options[:labels]
       @households = options[:households]
+      @mailchimp_synchronization_path = options[:mailchimp_synchronization_path]
 
       init_items
     end
@@ -30,20 +31,37 @@ module Dropdown
       tabular_links(:xlsx)
       vcard_link
       pdf_link
+      mailchimp_link
       label_links
       email_addresses_link
     end
 
-    def tabular_links(format)
+    def tabular_links(format) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       path = params.merge(format: format)
       item = add_item(translate(format), '#')
-      item.sub_items << Item.new(translate(:addresses), path)
-      item.sub_items << Item.new(translate(:households), path.merge(household: true)) if @households
-      item.sub_items << Item.new(translate(:everything), path.merge(details: true)) if @details
+      if Settings.table_displays
+        item.sub_items << Item.new(translate(:selection),
+                                   path.merge(selection: true),
+                                   data: { checkable: true })
+      end
+      item.sub_items << Item.new(translate(:addresses), path, data: { checkable: true })
+      item.sub_items << Item.new(translate(:households),
+                                 path.merge(household: true),
+                                 data: { checkable: true }) if @households
+
+      item.sub_items << Item.new(translate(:everything),
+                                 path.merge(details: true),
+                                 data: { checkable: true }) if @details
     end
 
     def vcard_link
       add_item(translate(:vcard), params.merge(format: :vcf), target: :new)
+    end
+
+    def mailchimp_link
+      if @mailchimp_synchronization_path
+        add_item('MailChimp', @mailchimp_synchronization_path, method: :post, remote: true)
+      end
     end
 
     def email_addresses_link

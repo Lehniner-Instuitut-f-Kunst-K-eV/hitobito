@@ -7,22 +7,25 @@
 
 class ApplicationController < ActionController::Base
 
-  include Concerns::DecoratesBeforeRendering
+  include DecoratesBeforeRendering
   include Userstamp
   include Translatable
-  include Concerns::Stampable
-  include Concerns::Localizable
-  include Concerns::Authenticatable
+  include Stampable
+  include Localizable
+  include Authenticatable
   include ERB::Util
+  include Sentry
+  include ParamConverters
 
   # protect with null_session only in specific api controllers
   protect_from_forgery with: :exception
 
   helper_method :person_home_path
-  hide_action :person_home_path
 
   before_action :set_no_cache
   before_action :set_paper_trail_whodunnit
+
+  class_attribute :skip_translate_inheritable
 
   alias decorate __decorator_for__
 
@@ -59,5 +62,17 @@ class ApplicationController < ActionController::Base
   def user_for_paper_trail
     origin_user_id = session[:origin_user]
     origin_user_id ? origin_user_id : super
+  end
+
+  def current_ability
+    @current_ability ||= if current_user
+                           Ability.new(current_user)
+                         else
+                           TokenAbility.new(current_service_token)
+                         end
+  end
+
+  def after_sign_in_path_for(resource)
+    stored_location_for(resource) || root_path
   end
 end

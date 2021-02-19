@@ -1,0 +1,14 @@
+= render layout: 'available', locals: { url: move_group_role_list_path(group),
+                              title: t('.title'),
+                              method: :put,
+                              people_ids: @people_ids,
+                              role_types: @role_types,
+                              submit_label: t('.submit') } do
+
+
+  = fields_for(:role, entry) do |f|
+    = f.hidden_field :group_id
+    = f.hidden_field :type
+
+    - entry.class.used_attributes.each do |attr|
+      = f.hidden_field attr

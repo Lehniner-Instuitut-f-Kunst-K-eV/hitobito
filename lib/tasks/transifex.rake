@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -7,6 +7,7 @@
 
 
 # requires transifex-client system package
+# rubocop:disable Rails/RakeEnvironment
 namespace :tx do
   desc 'Configure locale files for transifex'
   task :config do
@@ -72,5 +73,10 @@ namespace :tx do
       ENV['CMD'] = 'if [ -f .tx/config ]; then tx pull -f; fi'
       Rake::Task['wagon:exec'].invoke
     end
+    task :push do
+      ENV['CMD'] = 'if [ -f .tx/config ]; then tx push -s; fi'
+      Rake::Task['wagon:exec'].invoke
+    end
   end
 end
+# rubocop:enable Rails/RakeEnvironment

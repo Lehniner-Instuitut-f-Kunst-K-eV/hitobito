@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-#  Copyright (c) 2012-2018, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2021, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -9,25 +9,33 @@ class Event::Filter
 
   attr_reader :type, :filter, :group, :year, :sort_expression
 
-  def initialize(type, filter, group, year, sort_expression)
+  def initialize(group, type, filter, year, sort_expression)
+    @group = group
     @type = type
     @filter = filter
-    @group = group
     @year = year
     @sort_expression = sort_expression
   end
 
   def list_entries
-    scope = Event. # nesting restricts to parent, we want more
-      where(type: type).
-      includes(:groups).
-      with_group_id(relevant_group_ids).
-      in_year(year).
-      order_by_date.
-      preload_all_dates.
-      uniq
+    sort_expression ? scope.distinct.reorder(sort_expression) : scope.distinct
+  end
 
-    sort_expression ? scope.reorder(sort_expression) : scope
+  def scope
+    Event # nesting restricts to parent, we want more
+      .where(type: type)
+      .includes(:groups)
+      .left_joins(:translations)
+      .with_group_id(relevant_group_ids)
+      .in_year(year)
+      .preload_all_dates
+  end
+
+  def to_h
+    { year: year,
+      type: type,
+      filter: filter,
+      sort_expression: sort_expression }
   end
 
   private

@@ -15,9 +15,10 @@
       = labeled_attr(entry, :payee)
       = labeled_attr(entry, :beneficiary) if entry.bank?
       = labeled_attr(entry, :address)
-      = labeled_attr(entry, :account_number)
+      = labeled_attr(entry, :account_number) if entry.account_number?
       = labeled_attr(entry, :participant_number) if entry.with_reference?
       = labeled_attr(entry, :iban) if entry.iban.present?
       = labeled_attr(entry, :esr_number) if entry.with_reference?
       = labeled_attr(entry, :creator)
+      = labeled_attr(entry, :vat_number) if entry.vat_number?
 

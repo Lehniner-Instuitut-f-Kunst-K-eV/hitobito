@@ -1,24 +1,20 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
 
+
 module MailRelay
   # A generic email relay object. Retrieves messages from a mail server and resends
-  # them to a list of recievers.
+  # them to a list of receivers.
   # In subclasses, override the methods #relay_address?, #sender_allowed? and #receivers
   # to constrain which mails are sent to whom.
   #
   # See the .relay_current method for the main fetch loop and #relay for the processing
   # decision tree.
   class Base
-
-    # Define a header that contains the original receiver address.
-    # This header could be set by the mail server.
-    class_attribute :receiver_header
-    self.receiver_header = 'X-Envelope-To'
 
     # Number of emails to retrieve in one batch.
     class_attribute :retrieve_count
@@ -28,11 +24,15 @@ module MailRelay
     class_attribute :mail_domain
     self.mail_domain = 'localhost'
 
-    attr_reader :message
+    attr_reader :message, :mail_log
 
     delegate :valid_email?, to: :class
 
     class << self
+
+      def logger
+        Delayed::Worker.logger || Rails.logger
+      end
 
       # Retrieve, process and delete all mails from the mail server.
       def relay_current
@@ -47,57 +47,42 @@ module MailRelay
         last_exception = nil
 
         mails = Mail.find_and_delete(count: retrieve_count) do |message|
-          begin
-            new(message).relay
-          rescue MailProcessedBeforeError => e
-            message.mark_for_delete = false
-            Airbrake.notify(e)
-          rescue Exception => e # rubocop:disable Lint/RescueException
-            message.mark_for_delete = false
-            last_exception = MailRelay::Error.new(message, e)
-          end
+          proccessed_error = process(message)
+          last_exception = proccessed_error if proccessed_error
         end
 
-        [mails, last_exception]
+        [mails || [], last_exception]
+      rescue EOFError => e
+        logger.warn(e)
+        [[], nil]
       end
 
-      # rubocop:disable Rails/Output
+      def process(message)
+        new(message).relay
+      rescue MailRelay::MailProcessedBeforeError => e
+        processed_before(message, e)
+        nil
+      rescue Exception => e # rubocop:disable Lint/RescueException
+        message.mark_for_delete = false
+        MailRelay::Error.new(e.message, message, e)
+      end
 
-      # Use this method in the console to clean up errorenous emails.
-      def manually_clear_emails
-        Mail.find_and_delete(count: 10) do |message|
-          message.mark_for_delete = should_clear_email?(message)
-          puts ''
+      def processed_before(message, exception)
+        mail_log = MailLog.find_by(mail_hash: MailLog.build(message).mail_hash)
+        if mail_log&.completed?
+          logger.info "Deleting previously processed email from #{message.from}"
+        else
+          message.mark_for_delete = false
+          Airbrake.notify(exception)
+          mail_hash = mail_log.mail_hash
+          Raven.capture_exception(exception, logger: 'mail_relay', extra: { mail_hash: mail_hash },
+                                             fingerprint: ['{{ default }}', mail_hash])
         end
       end
 
       def valid_email?(email)
-        email_address = email.to_s.strip
-        email_address.present? && !email_address.ends_with?('<>') && email_address.include?('@')
+        email.present? && Truemail.valid?(email)
       end
-
-      private
-
-      def should_clear_email?(message)
-        print "Delete message '#{message.subject}' (y/N/i)? "
-        case gets.strip.downcase
-        when 'y'
-          true
-        when 'i'
-          inspect_message(message)
-        else
-          false
-        end
-      end
-
-      def inspect_message(message)
-        puts message
-        puts "\n\n"
-        should_clear_email?(message)
-      end
-
-      # rubocop:enable Rails/Output
-
     end
 
     def initialize(message)
@@ -106,9 +91,9 @@ module MailRelay
     end
 
     # Process the given email.
-    def relay
+    def relay # rubocop:disable Metrics/MethodLength
       if relay_address?
-        if sender_allowed?
+        if sender_valid? && sender_allowed?
           @mail_log.update(status: :bulk_delivering)
           bulk_deliver(message)
           @mail_log.update(status: :completed)
@@ -138,9 +123,9 @@ module MailRelay
     # The receiver account that originally got this email.
     # Returns only the part before the @ sign
     def envelope_receiver_name
-      receiver_from_x_header ||
-      receiver_from_received_header ||
-      raise("Could not determine original receiver for email:\n#{message.header}")
+      receiver_from_x_original_to_header ||
+        receiver_from_received_header ||
+        raise("Could not determine original receiver for email:\n#{message.header}")
     end
 
     def sender_email
@@ -152,14 +137,16 @@ module MailRelay
     def receiver_from_received_header
       if (received = message.received)
         received = received.first if received.respond_to?(:first)
-        received.info[/ for .*?([^\s<>]+)@[^\s<>]+/, 1]
+        received.info[/\tfor .*?([^\s<>]+)@[^\s<>]+/, 1]
       end
     end
 
-    # Try to read the envelope receiver from the given x header
-    def receiver_from_x_header
-      field = message.header[receiver_header]
-      field.to_s.split('@', 2).first if field
+    def receiver_from_x_original_to_header
+      first_header('X-Original-To').to_s.split('@', 2).first.presence
+    end
+
+    def first_header(header_name)
+      Array(message.header[header_name]).first
     end
 
     # Is the mail sent to a valid relay address?
@@ -170,6 +157,10 @@ module MailRelay
     # Is the mail sender allowed to post to this address
     def sender_allowed?
       true
+    end
+
+    def sender_valid?
+      valid_email?(sender_email)
     end
 
     # List of receiver email addresses for the resent email.
@@ -222,35 +213,12 @@ module MailRelay
 
     def init_mail_log(message)
       mail_log = MailLog.build(message)
-      if mail_log.exists?
-        processed_before_error(mail_log)
-        return
-      end
+      raise MailProcessedBeforeError, mail_log if mail_log.exists?
+
       mail_log.mailing_list_name = envelope_receiver_name
       mail_log.save
       mail_log
     end
 
-    def processed_before_error(mail_log)
-      msg = "Mail with subject '#{mail_log.mail_subject}' has already been " \
-            'processed before and is skipped. Please remove it manually ' \
-            "from catch-all inbox and check why it could not be processed.\n" \
-            "Mail Hash: #{mail_log.mail_hash}"
-      raise MailProcessedBeforeError, msg
-    end
-
   end
-
-  class Error < StandardError
-    attr_reader :original
-    attr_reader :mail
-
-    def initialize(mail, original = nil)
-      @mail = mail
-      @original = original
-    end
-  end
-
-  class MailProcessedBeforeError < StandardError; end
-
 end

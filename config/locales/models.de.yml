@@ -1,8 +1,7 @@
-#  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
-
 
 de:
   time:
@@ -10,11 +9,13 @@ de:
       time: "%H:%M"
       date_time: "%d.%m.%Y %H:%M"
       month_year: '%B %Y'
+
   date:
     formats:
       default: ! '%d.%m.%Y'
       long: ! '%e %B %Y'
       short: ! '%e %b'
+
   number:
     currency:
       format:
@@ -22,7 +23,6 @@ de:
         format: ! '%u %n'
         separator: .
         precision: 2
-        unit: CHF
     format:
       delimiter: ! ''''
       precision: 2
@@ -62,8 +62,8 @@ de:
           attributes:
             choices:
               requires_more_than_one_choice: 'muss mindestens zwei Anworten enthalten'
+              requires_exactly_one_choice: 'muss genau eine Antwort enthalten'
         event/participation:
-          emoji_suspected: 'Bitte keine Sonderzeichen (insbesondere Emoji) verwenden'
           attributes:
             person_id:
               taken: ist bereits angemeldet
@@ -72,9 +72,12 @@ de:
             mail_name:
               not_allowed: "'%{mail_name}' darf nicht verwendet werden"
             mail_name_not_allowed:
+        oauth/application:
+          attributes:
+            scopes:
+              not_match_configured: "stimmen nicht mit denen am server hinterlegten überein."
         person:
           name_missing: 'Bitte geben Sie einen Namen ein'
-          emoji_suspected: 'Bitte keine Sonderzeichen (insbesondere Emoji) verwenden'
           readonly: ": Du hast nicht auf alle Personen aus dem Haushalt Schreibrechte. Entferne %{name} aus dem Haushalt, um die Adresse anzupassen."
           attributes:
             email:
@@ -136,9 +139,15 @@ de:
       additional_email:
         one: Weitere E-Mail
         other: Weitere E-Mails
+      assignment:
+        one: Auftrag
+        other: Aufträge
       custom_content:
         one: Text
         other: Texte
+      dispatch:
+        one: Versand
+        other: Versand
       event:
         one: Anlass
         other: Anlässe
@@ -157,6 +166,9 @@ de:
       event/kind:
         one: Kursart
         other: Kursarten
+      event/role:
+        one: Anlass Rolle
+        other: Anlass Rollen
       event/role/assistant_leader:
         one: Leitung
         other: Leitung
@@ -184,6 +196,12 @@ de:
       group:
         one: Gruppe
         other: Gruppen
+      group_setting:
+        one: Einstellung
+        other: Einstellungen
+      help_text:
+        one: Hilfetext
+        other: Hilfetexte
       invoice:
         one: Rechnung
         other: Rechnungen
@@ -196,9 +214,27 @@ de:
       invoice_item:
         one: Rechnungsposten
         other: Rechnungsposten
+      invoice_list:
+        one: Sammelrechnung
+        other: Sammelrechnungen
       label_format:
         one: Etikettenformat
         other: Etikettenformate
+      message:
+        one: Nachricht
+        other: Nachrichten
+      message/letter:
+        one: Brief
+        other: Briefe
+      message/letter_with_invoice:
+        one: Rechnungsbrief
+        other: Rechnungsbriefe
+      message/text_message:
+        one: SMS
+        other: SMS
+      mail_log:
+        one: Verlauf
+        other: Verlauf
       mailing_list:
         one: Abo
         other: Abos
@@ -208,6 +244,15 @@ de:
       payment:
         one: Zahlung
         other: Zahlungen
+      oauth/application:
+        one: OAuth Applikation
+        other: OAuth Applikationen
+      oauth/access_token:
+        one: OAuth Zugangstoken
+        other: OAuth Zugangstokens
+      oauth/access_grant:
+        one: OAuth Autorisierung
+        other: OAuth Autorisierungen
       payment_reminder:
         one: Mahnung
         other: Mahnungen
@@ -217,6 +262,9 @@ de:
       person/add_request:
         one: Zugriffsanfrage
         other: Anfragen
+      person_duplicate:
+        one: Duplikat
+        other: Duplikate
       people_filter:
         one: Filter
         other: Filter
@@ -235,12 +283,18 @@ de:
       role:
         one: Rolle
         other: Rollen
+      service_token:
+        one: API-Key
+        other: API-Keys
       social_account:
         one: Social Media Adresse
         other: Social Media Adressen
       subscription:
         one: Abonnent
         other: Abonnenten
+      tag:
+        one: Tag
+        other: Tags
 
     attributes:
       acts_as_taggable_on/tag:
@@ -273,6 +327,11 @@ de:
         vs: Wallis
         zg: Zug
         zh: Zürich
+
+      assignment:
+        title: Titel
+        description: Beschreibung
+        state: Status
 
       person:
         first_name: Vorname
@@ -310,6 +369,11 @@ de:
         created_at: Erstellt
         updated_at: Geändert
 
+      person_duplicate:
+        birth_year: Jahrgang
+        roles_list: Rollen
+        person_name: Vorname / Name / Übername
+
       person/add_request:
         person: Person
         requester: Anfrage von
@@ -341,6 +405,7 @@ de:
         layer_group_id: Ebene
         type: Gruppentyp
         type_name: Gruppentyp
+        description: Beschreibung
 
       event:
         group_ids: Gruppen
@@ -372,6 +437,9 @@ de:
         applicant_count: Anzahl Anmeldungen
         applications_cancelable: Abmeldung möglich
         display_booking_info: Anzeige Anmeldestand
+        participations_visible: Teilnehmersichtbarkeit
+        waiting_list: Warteliste
+        requires_approval: Empfehlung nötig
 
       event/contact_attrs:
         required: Obligatorisch
@@ -428,7 +496,7 @@ de:
       event/participation:
         person_id: Person
         event_id: Event
-        additional_information: Bemerkungen (Allgemeines, Gesundheitsinformationen, Allergien, usw.)
+        additional_information: Bemerkungen
         answers: Fragen
         created_at: Anmeldedatum
         roles: Rolle
@@ -460,6 +528,19 @@ de:
       note:
         text: Text
 
+      oauth/application:
+        redirect_uri: Redirect URIs
+
+      people_relation:
+        head_id: Person
+        tail_id: Andere Person
+        kind: Art
+
+      phone_number:
+        number: Nummer
+        label: Typ
+        public: Öffentlich
+
       qualification:
         qualification_kind: Qualifikation
         qualification_kind_id: Qualifikation
@@ -479,25 +560,24 @@ de:
         deleted_at: Gelöscht
         reactivateable: Reaktivierbar
 
-      people_relation:
-        head_id: Person
-        tail_id: Andere Person
-        kind: Art
-
       relations_to_tails:
         tail_id: Beziehung
         kind: Art
-
-      phone_number:
-        number: Nummer
-        label: Typ
-        public: Öffentlich
 
       # used for nested phone_numbers
       phone_numbers:
         number: Telefonnummer
         label: Telefonnummer Typ
         public: Öffentlich
+
+      group_setting:
+        var: Einstellung
+        settings:
+          text_message_provider: SMS Provider
+        username: Benutzername
+        password: Passwort
+        provider: Provider
+        originator: Absender
 
       role:
         label: Bezeichnung
@@ -583,11 +663,51 @@ de:
         additional_sender: Zusätzlicher Absender
         preferred_labels: Bevorzugte E-Mail-Labels
         main_email: Versand an Haupt E-Mail
+        mailchimp_api_key: 'MailChimp API-Schlüssel'
+        mailchimp_list_id: 'MailChimp Listen-ID'
+        mailchimp_sync: 'MailChimp Sync'
+        mailchimp_state: 'Mailchimp Status'
+        mailchimp_states:
+          unchanged: Unverändert
+          success: Aktualisiert
+          partial: Teilweise
+          failed: Fehlgeschlagen
+        mailchimp_include_additional_emails: 'Alle Versandadressen synchronisieren'
+
+      mail_log:
+        updated_at: Bearbeitet am
+        mail_from: Absender
+        mail_subject: Betreff
+        status: Status
+        statuses:
+          retreived: Wird gesendet
+          bulk_delivering: Wird gesendet
+          completed: Gesendet
+          sender_rejected: Absender abgelehnt
+          unkown_recipient: Fehler
+
+      message:
+        source: Empfänger
+        subject: Betreff
+        state: Zustand
+        type: Typ
+        states:
+          draft: Entwurf
+          pending: Vorbereitet
+          processing: in Bearbeitung
+          finished: Abgeschlossen
+          failed: Fehlgeschlagen
+        recipient_count: Anzahl Empfänger
+        success_count: Empfänger erfolgreich
+        failed_count: Empfänger fehlerhaft
+        sent_at: Verarbeitet um
+
+      message/letter:
+        body: Inhalt
 
       subscription:
         related_role_types: Rollen
         subscriber_id: '' # not used, error messages require different labels
-
       people_filter:
         name: Name
 
@@ -596,6 +716,17 @@ de:
         subject: Betreff
         body: Inhalt
 
+      help_text:
+        context: Kontext
+        key: Schlüssel
+        body: Inhalt
+        field:
+          one: Feld
+          other: Felder
+
+        action:
+          one: Seite
+          other: Seiten
 
       label_format:
         name: Bezeichnung
@@ -613,8 +744,9 @@ de:
         pp_post: PP-Zeile
 
       invoice:
+        currency: Währung
         title: Titel
-        description: Beschreibung
+        description: Text
         invoice_items: Rechnungsposten
         invoice_item_article: Rechnungsartikel
         invoice_config: Rechnungseinstellung
@@ -627,10 +759,12 @@ de:
           ch_bes: Roter Einzahlungsschein Bank (CH)
           ch_esr: Oranger Einzahlungsschein Post (CH)
           ch_besr: Oranger Einzahlungsschein Bank (CH)
+          no_ps: Keiner
+          qr: QR Rechnung
         states:
           draft: Entwurf
           issued: Gestellt
-          sent: Versendet
+          sent: per Mail versendet
           payed: Bezahlt
           reminded: Gemahnt
           cancelled: Storniert
@@ -645,16 +779,20 @@ de:
         total_inkl_vat: Total inkl. MwSt.
         total: Total inkl. MwSt.
         vat: MwSt.
+        vat_number: MwSt. Nummer
         payment_information: Zahlungsinformation
         payment_purpose: Zahlungszweck
         address: Absender Adresse
         beneficiary: Zugunsten von
-        payee: Einzahlung für
+        payee: Name / Firma
         account_number: Kontonummer
         iban: IBAN
         payment_slip: Einzahlungsschein
         participant_number: Teilnehmernummer
         creator: Rechnungssteller
+        cost_centers: Kostenstellen
+        accounts: Konten
+        payments: Zahlungseingänge
 
       invoice_article:
         number: Artikelnummer
@@ -667,6 +805,7 @@ de:
         account: Konto
 
       invoice_config:
+        currency: Währung
         payment_information: Zahlungsinformation
         address: Absender Adresse
         account_number: Kontonummer
@@ -679,13 +818,16 @@ de:
         payee: Einzahlung für
         payment_slip: Einzahlungsschein
         payment_slips:
+          qr: QR Rechnung
           ch_es: Roter Einzahlungsschein Post (CH)
           ch_bes: Roter Einzahlungsschein Bank (CH)
           ch_esr: Oranger Einzahlungsschein Post (CH)
           ch_besr: Oranger Einzahlungsschein Bank (CH)
+          no_ps: Keiner
         participant_number: Teilnehmernummer
         participant_number_internal: Teilnehmernummer intern
         payment_reminder_configs: Mahnungen
+        vat_number: MwSt. Nummer
 
       invoice_item:
         name: Name
@@ -694,6 +836,17 @@ de:
         unit_cost: Preis
         count: Anzahl
         cost: Betrag
+        cost_center: Kostenstelle
+        account: Konto
+
+
+      invoice_list:
+        title: Titel
+        receiver: Empfänger
+        recipients_total: Empfänger Insgesamt
+        recipients_paid: Empfänger Bezahlt
+        amount_total: Betrag insgesamt
+        amount_paid: Betrag bezahlt
 
       # used for nested attributes
       invoice_items:
@@ -703,6 +856,8 @@ de:
         unit_cost: Preis
         count: Anzahl
         cost: Betrag
+        cost_center: Kostenstelle
+        account: Konto
 
       payment:
         invoice: Rechnung
@@ -725,8 +880,35 @@ de:
         text: Text der Mahnung
         due_days: Fälligkeitszeitraum der Mahnung
 
+      service_token:
+        name: Name
+        description: Beschreibung
+        key: Key
+        abilities: Rechte
+        last_access: Letzter Zugriff
+        people: Personen dieser Ebene
+        people_below: Personen dieser und der darunterliegenden Ebenen
+        groups: Gruppen dieser und der darunterliegenden Ebenen
+        events: Anlässe dieser und der darunterliegenden Ebenen
+        invoices: Rechnungen dieser Ebene
+        event_participations: Teilnehmende von Anlässen dieser Ebene
+        mailing_lists: Abonnent/-innen von Mailinglisten dieser Ebene
+
+      acts_as_taggable_on/tag:
+        taggings_count: Anzahl
+        category: Kategorie
+        name: Name
+
+  doorkeeper:
+    scopes:
+      email: Lesen deiner E-Mail Adresse
+      name: Lesen deiner E-Mail Adresse und Name
+      with_roles: Lesen deiner Stammdaten und Rollen
+      openid: Lesen deines OIDC Identity Tokens
+      api: Lesen aller Personen, Gruppen, Events und Rechnungen auf die du Zugriff hast, via die JSON-Schnittstellen
   errors:
     messages:
+      attachments_not_allowed: "darf keine Anhänge enthalten"
       invalid_money: "muss auf 5 Rappen gerundet werden"
       # timeliness
       invalid_date: "ist kein gültiges Datum"
@@ -738,7 +920,7 @@ de:
       after: "muss  nach %{restriction} sein"
       on_or_after: "muss %{restriction} oder danach sein"
       # carrierwave
-      extension_white_list_error: "akzeptiert nur die folgenden Dateitypen: %{allowed_types}"
+      extension_whitelist_error: "akzeptiert nur die folgenden Dateitypen: %{allowed_types}"
       dimensions_too_large: "akzeptiert nur Bilder mit einer Grösse kleiner als %{maximum} Pixel"
       filesize_too_large: "darf nicht grösser als %{maximum} MB sein"
       # devise

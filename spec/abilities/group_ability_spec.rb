@@ -10,10 +10,8 @@ require 'spec_helper'
 
 describe GroupAbility do
 
-
   subject { ability }
   let(:ability) { Ability.new(role.person.reload) }
-
 
   context 'layer and below full' do
     let(:role) { Fabricate(Group::TopGroup::Leader.name.to_sym, group: groups(:top_group)) }
@@ -52,6 +50,10 @@ describe GroupAbility do
         is_expected.to be_able_to(:index_notes, group)
       end
 
+      it 'may show service_tokens' do
+        is_expected.to be_able_to(:index_service_tokens, group)
+      end
+
       it 'may manage person tags' do
         is_expected.to be_able_to(:manage_person_tags, group)
       end
@@ -86,6 +88,10 @@ describe GroupAbility do
         is_expected.to be_able_to(:index_notes, group)
       end
 
+      it 'may not index service tokens' do
+        is_expected.not_to be_able_to(:index_service_tokens, group)
+      end
+
       it 'may manage person tags' do
         is_expected.to be_able_to(:manage_person_tags, group)
       end
@@ -110,6 +116,10 @@ describe GroupAbility do
         is_expected.to be_able_to(:index_notes, group)
       end
 
+      it 'may show service tokens' do
+        is_expected.to be_able_to(:index_service_tokens, group)
+      end
+
       it 'may manage person tags' do
         is_expected.to be_able_to(:manage_person_tags, group)
       end
@@ -120,6 +130,10 @@ describe GroupAbility do
 
       it 'may not show person notes' do
         is_expected.not_to be_able_to(:index_notes, group)
+      end
+
+      it 'may not show service tokens' do
+        is_expected.not_to be_able_to(:index_service_tokens, group)
       end
 
       it 'may not manage person tags' do
@@ -164,6 +178,10 @@ describe GroupAbility do
         is_expected.to be_able_to(:index_notes, group)
       end
 
+      it 'may show service tokens' do
+        is_expected.to be_able_to(:index_service_tokens, group)
+      end
+
       it 'may manage person tags' do
         is_expected.to be_able_to(:manage_person_tags, group)
       end
@@ -188,6 +206,10 @@ describe GroupAbility do
         is_expected.to be_able_to(:index_notes, group)
       end
 
+      it 'may show service tokens' do
+        is_expected.to be_able_to(:index_service_tokens, group)
+      end
+
       it 'may manage person tags' do
         is_expected.to be_able_to(:manage_person_tags, group)
       end
@@ -210,6 +232,10 @@ describe GroupAbility do
 
       it 'may not show person notes' do
         is_expected.not_to be_able_to(:index_notes, group)
+      end
+
+      it 'may not show service tokens' do
+        is_expected.not_to be_able_to(:index_service_tokens, group)
       end
 
       it 'may not manage person tags' do
@@ -263,6 +289,10 @@ describe GroupAbility do
         is_expected.not_to be_able_to(:index_notes, group)
       end
 
+      it 'mayi not show service tokens' do
+        is_expected.not_to be_able_to(:index_service_tokens, group)
+      end
+
       it 'may not manage person tags' do
         is_expected.not_to be_able_to(:manage_person_tags, group)
       end
@@ -312,6 +342,10 @@ describe GroupAbility do
 
       it 'may not show person notes' do
         is_expected.not_to be_able_to(:index_notes, group)
+      end
+
+      it 'may not show service tokens' do
+        is_expected.not_to be_able_to(:index_service_tokens, group)
       end
 
       it 'may not manage person tags' do
@@ -381,4 +415,49 @@ describe GroupAbility do
     end
   end
 
+  context :manage_person_duplicates do
+    let(:top_layer) { groups(:top_layer) }
+    let(:top_group) { groups(:top_group) }
+    let(:bottom_layer) { groups(:bottom_layer_one) }
+    let(:bottom_group) { groups(:bottom_group_one_one) }
+
+    context :permission_admin do
+
+      before do
+        allow(Group::TopLayer::TopAdmin).to receive(:permissions)
+          .and_return([:admin])
+      end
+
+      let(:role) { Fabricate('Group::TopLayer::TopAdmin', group: top_layer) }
+
+      it 'may list duplicates on top layer' do
+        is_expected.to be_able_to(:manage_person_duplicates, top_layer)
+      end
+
+      it 'may list duplicates on lower layer' do
+        is_expected.to be_able_to(:manage_person_duplicates, bottom_layer)
+      end
+
+      it 'may not list duplicates on non layer' do
+        is_expected.not_to be_able_to(:manage_person_duplicates, top_group)
+      end
+    end
+
+    context :permission_layer_and_below_full do
+
+      let(:role) { Fabricate('Group::BottomLayer::Leader', group: bottom_layer) }
+
+      it 'may not list duplicates on top layer' do
+        is_expected.not_to be_able_to(:manage_person_duplicates, top_layer)
+      end
+
+      it 'may list duplicates on bottom layer' do
+        is_expected.to be_able_to(:manage_person_duplicates, bottom_layer)
+      end
+
+      it 'may not list duplicates on non layer' do
+        is_expected.not_to be_able_to(:manage_person_duplicates, bottom_group)
+      end
+    end
+  end
 end

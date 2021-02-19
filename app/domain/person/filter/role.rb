@@ -1,6 +1,6 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2017, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2017-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -15,9 +15,9 @@ class Person::Filter::Role < Person::Filter::Base
   end
 
   def apply(scope)
-    scope.
-      where(type_conditions).
-      where(duration_conditions)
+    scope
+      .where(type_conditions)
+      .where(duration_conditions)
   end
 
   def blank?
@@ -40,13 +40,19 @@ class Person::Filter::Role < Person::Filter::Base
   end
 
   def time_range
-    start_at = args[:start_at].presence || Time.zone.at(0).to_date.to_s
-    finish_at = args[:finish_at].presence || Time.zone.now.to_date.to_s
+    start_day = parse_day(args[:start_at], Time.zone.at(0), :beginning_of_day)
+    finish_day = parse_day(args[:finish_at], Time.zone.now, :end_of_day)
 
-    Date.parse(start_at).beginning_of_day..Date.parse(finish_at).end_of_day
+    start_day..finish_day
   end
 
   private
+
+  def parse_day(date, default, rounding)
+    Date.parse(date.presence).send(rounding.to_sym)
+  rescue ArgumentError, TypeError
+    Date.parse(default.to_date.to_s).send(rounding.to_sym)
+  end
 
   def merge_duration_args(hash)
     hash.merge(args.slice(:kind, :start_at, :finish_at))
@@ -67,8 +73,8 @@ class Person::Filter::Role < Person::Filter::Base
   end
 
   def role_classes_from_types
-    map = Role.all_types.each_with_object({}) { |r, h| h[r.sti_name] = r }
-    args[:role_types].map { |t| map[t] }.compact
+    role_map = Role.all_types.index_by(&:sti_name)
+    args[:role_types].map { |t| role_map[t] }.compact
   end
 
   def type_conditions
@@ -84,24 +90,24 @@ class Person::Filter::Role < Person::Filter::Base
   end
 
   def active_role_condition
-    <<-SQL.strip_heredoc.split.map(&:strip).join(' ')
-    roles.created_at <= :max AND
-    (roles.deleted_at >= :min OR roles.deleted_at IS NULL)
+    <<~SQL.split.map(&:strip).join(' ')
+      roles.created_at <= :max AND
+      (roles.deleted_at >= :min OR roles.deleted_at IS NULL)
     SQL
   end
 
   def deleted_roles_join
-    <<-SQL.strip_heredoc.split.map(&:strip).join(' ')
+    <<~SQL.split.map(&:strip).join(' ')
       INNER JOIN roles ON
         (roles.person_id = people.id AND roles.deleted_at IS NOT NULL)
-      INNER JOIN groups ON roles.group_id = groups.id
+      INNER JOIN #{Group.quoted_table_name} ON roles.group_id = #{Group.quoted_table_name}.id
     SQL
   end
 
   def active_roles_join
-    <<-SQL.strip_heredoc.split.map(&:strip).join(' ')
+    <<~SQL.split.map(&:strip).join(' ')
       INNER JOIN roles ON roles.person_id = people.id
-      INNER JOIN groups ON roles.group_id = groups.id
+      INNER JOIN #{Group.quoted_table_name} ON roles.group_id = #{Group.quoted_table_name}.id
     SQL
   end
 

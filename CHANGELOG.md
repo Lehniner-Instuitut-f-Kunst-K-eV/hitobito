@@ -1,8 +1,59 @@
 # Hitobito Changelog
 
+## unreleased
+
+## Version 1.23
+
+*  Layout der OAuth-Dialoge angepasst und Logos ermöglicht (#1044)
+
+## Version 1.22
+
+*  Anlässe und deren Anmeldeangaben können übersetzt werden (#1135, hitobito_sjas#28)
+*  automatische Warteliste für Anlässe (hitobito_sjas#27)
+*  Tag Verwaltung unter Einstellungen
+*  Anmeldungsfragen können auch nur eine Antwort haben (#1079)
+*  Adressvervollständigung auf Personen (hitobito_cvp#18)
+*  Tägliche Validierung der Adressen einer Person (hitobito_cvp#19)
+*  Anlässe können den Teilnehmern erlauben, sich gegenseitig in der Teilnehmerliste zu sehen (#878)
+*  Personen / Duplikate zusammenführen (hitobito_cvp#23)
+*  Erstellen von Rechungen für Abonnenten von Abos
+*  Bugfix: Vergangene Anlässe werden nicht mehr auf der Person angezeigt (#847)
+*  Verbesserung der Mailchimp Integration und am Rechnungsmodul
+*  Liste "Meine Abos" auf der Person (optional für jede hitobito-Instanz)
+*  QR-Code-Rechnungen
+*  Icons in der Suche
+*  Neue API-Endpoints für Gruppen-Hierarchie und Abos
+*  Berechtigungen werden im OAuth-Profil mitgeliefert
+*  Eigene OAuth-Autorisierungen können entfernt werden
+*  Generelle Validierung von E-Mail Adressen
+*  Datenbank kann nun Emoji (also: alles aus Unicode) speichern
+*  Bug behoben, der das Übersetzen von Texten in neue Sprachen verhindert hat
+*  Personen filtern die einen spezifischen Tag nicht besitzen
+
+## Version 1.21
+
+*  Stackupgrade ruby-2.5, rails-6
+*  OIDC für OAuth
+*  Mehr Daten in der JSON-API
+
+## Version 1.20
+
+*   Für Seiten und Formulare können Hilfetexte hinterlegt werden
+*   Erfassen von mehreren Personen erleichtert ("Speichern und weitere erfassen"-Button)
+*   Profilbilder werden bis 512x512 Pixel erlaubt
+
+
 ## Version 1.19
 
 *   Neue Navigation, mit Menü für Mobile
+*   Mehrfachaktionen auf Personen
+*   API Schnittstelle für Events
+*   Service Accounts für API
+*   Rechnungen erstellen mit `:finance` Berechtigung
+*   Integration mit Mailchimp API
+*   Seite für Events mit externer Anmeldung ohne Login
+*   Dynamische Spaltenauswahl auf Personen und Teilnehmern
+*   Möglichkeit, eigenes Logo pro Gruppe hochzuladen
 
 ## Version 1.18
 

@@ -10,7 +10,7 @@ class InvoiceConfigsController < CrudController
   self.nesting = Group
   self.permitted_attrs = [:payment_information, :address, :iban, :account_number,
                           :payment_slip, :beneficiary, :payee, :participant_number,
-                          :participant_number_internal, :email,
+                          :participant_number_internal, :email, :vat_number, :currency,
                           payment_reminder_configs_attributes: [
                             :id, :title, :text, :level, :due_days
                           ]]
@@ -33,13 +33,12 @@ class InvoiceConfigsController < CrudController
 
   def build_payment_reminder_configs
     missing_payment_reminder_levels.each do |level|
-      entry.payment_reminder_configs.build(level: level)
+      entry.payment_reminder_configs.build.with_defaults(level)
     end
   end
 
   def missing_payment_reminder_levels
-    1.upto(3).to_a - entry.payment_reminder_configs.collect(&:level)
+    PaymentReminderConfig::LEVELS.to_a - entry.payment_reminder_configs.collect(&:level)
   end
-
 
 end

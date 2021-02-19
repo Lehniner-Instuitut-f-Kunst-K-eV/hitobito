@@ -1,9 +1,4 @@
-# encoding: utf-8
-
-#  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
-#  hitobito and licensed under the Affero General Public License version 3
-#  or later. See the COPYING file at the top-level directory or at
-#  https://github.com/hitobito/hitobito.
+# frozen_string_literal: true
 
 class PeopleFiltersController < CrudController
 
@@ -11,14 +6,12 @@ class PeopleFiltersController < CrudController
 
   decorates :group
 
-  hide_action :index, :show
-
   skip_authorize_resource only: [:create]
 
   # load group before authorization
   prepend_before_action :parent
 
-  before_render_form :compose_role_lists
+  before_render_form :compose_role_lists, :load_possible_tags
 
   helper_method :people_list_path
 
@@ -76,11 +69,15 @@ class PeopleFiltersController < CrudController
   def assign_attributes
     entry.name = params[:name] || (params[:people_filter] && params[:people_filter][:name])
     entry.range = params[:range]
-    entry.filter_chain = params[:filters]
+    entry.filter_chain = params[:filters].except(:host).to_unsafe_hash if params[:filters]
   end
 
   def people_list_path(options = {})
     group_people_path(group, options)
+  end
+
+  def load_possible_tags
+    @possible_tags ||= PersonTags::Translator.new.possible_tags
   end
 
 end

@@ -1,15 +1,22 @@
 # encoding: utf-8
 
-#  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2018, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
 
 class InvoicesController < CrudController
+  include YearBasedPaging
+  include Api::JsonPaging
   decorates :invoice
 
   self.nesting = Group
-  self.sort_mappings = { recipient: Person.order_by_name_statement }
+  self.optional_nesting = [InvoiceList]
+
+  self.sort_mappings = { recipient: Person.order_by_name_statement,
+                         sequence_number: Invoice.order_by_sequence_number_statement }
+  self.remember_params += [:year, :state, :due_since, :invoice_list_id]
+
   self.search_columns = [:title, :sequence_number, 'people.last_name', 'people.email']
   self.permitted_attrs = [:title, :description, :state, :due_at,
                           :recipient_id, :recipient_email, :recipient_address,
@@ -21,8 +28,14 @@ class InvoicesController < CrudController
                             :unit_cost,
                             :vat_rate,
                             :count,
+                            :cost_center,
+                            :account,
                             :_destroy
                           ]]
+
+  before_render_index :year  # sets ivar used in view
+
+  helper_method :group, :invoice_list
 
   def new
     entry.attributes = { payment_information: entry.invoice_config.payment_information }
@@ -33,6 +46,9 @@ class InvoicesController < CrudController
       format.html { super }
       format.pdf  { generate_pdf(list_entries.includes(:invoice_items)) }
       format.csv  { render_invoices_csv(list_entries.includes(:invoice_items)) }
+      format.json { render_entries_json(list_entries.includes(:invoice_items,
+                                                              :payments,
+                                                              :payment_reminders)) }
     end
   end
 
@@ -42,16 +58,31 @@ class InvoicesController < CrudController
       format.html { build_payment }
       format.pdf  { generate_pdf([entry]) }
       format.csv  { render_invoices_csv([entry]) }
+      format.json { render_entry_json }
     end
   end
 
   def destroy
     cancelled = run_callbacks(:destroy) { entry.update(state: :cancelled) }
     set_failure_notice unless cancelled
-    respond_with(entry, success: cancelled, location: group_invoices_path(parent))
+    respond_with(entry, success: cancelled, location: group_invoices_path(group))
   end
 
   private
+
+  def render_entries_json(entries)
+    paged_entries = entries.page(params[:page])
+    render json: [paging_properties(paged_entries),
+                  ListSerializer.new(paged_entries,
+                                     group: group,
+                                     page: params[:page],
+                                     serializer: InvoiceSerializer,
+                                     controller: self)].inject(&:merge)
+  end
+
+  def render_entry_json
+    render json: InvoiceSerializer.new(entry, group: group, controller: self)
+  end
 
   def build_payment
     @payment = entry.payments.build(payment_attrs)
@@ -76,8 +107,18 @@ class InvoicesController < CrudController
   end
 
   def render_invoices_pdf(invoices)
-    pdf = Export::Pdf::Invoice.render_multiple(invoices, pdf_options)
+    letter = find_letter(invoices)
+    pdf = if letter
+            recipients = Person.where(id: invoices.pluck(:recipient_id))
+            Export::Pdf::Messages::LetterWithInvoice.new(letter, recipients).render
+          else
+            Export::Pdf::Invoice.render_multiple(invoices, pdf_options)
+          end
     send_data pdf, type: :pdf, disposition: 'inline', filename: filename(:pdf, invoices)
+  end
+
+  def find_letter(invoices)
+    Message::LetterWithInvoice.find_by(invoice_list_id: invoices.first.invoice_list_id)
   end
 
   def filename(extension, invoices)
@@ -93,7 +134,7 @@ class InvoicesController < CrudController
     pdf = Export::Pdf::Labels.new(find_and_remember_label_format).generate(recipients)
     send_data pdf, type: :pdf, disposition: 'inline'
   rescue Prawn::Errors::CannotFit
-    redirect_to :back, alert: t('people.pdf.cannot_fit')
+    redirect_back(fallback_location: group_ionvoices_path(group), alert: t('people.pdf.cannot_fit'))
   end
 
   def list_entries
@@ -102,7 +143,7 @@ class InvoicesController < CrudController
       references(:recipient).list
 
     scope = scope.page(params[:page]).per(50) unless params[:ids]
-    Invoice::Filter.new(params).apply(scope)
+    Invoice::Filter.new(params.reverse_merge(year: year)).apply(scope)
   end
 
   def payment_attrs
@@ -125,7 +166,15 @@ class InvoicesController < CrudController
   end
 
   def authorize_class
-    authorize!(:index_invoices, parent)
+    authorize!(:index_invoices, group)
+  end
+
+  def group
+    parent.is_a?(InvoiceList) ? parent.group : parent
+  end
+
+  def invoice_list
+    parent if parent.is_a?(InvoiceList)
   end
 
 end

@@ -1,9 +1,10 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
+
 
 module AbilityDsl::Constraints
   module Event
@@ -12,6 +13,7 @@ module AbilityDsl::Constraints
     end
 
     def for_participations_read_events
+      event.participations_visible? ||
       permission_in_event?(:participations_read) ||
       for_participations_full_events
     end

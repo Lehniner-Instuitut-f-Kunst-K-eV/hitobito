@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-#  Copyright (c) 2012-2018, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2021, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -20,7 +20,7 @@ describe Event::Filter do
   end
 
   def filter(filter = nil, sort_expression = nil)
-    Event::Filter.new(type, filter, group, year, sort_expression)
+    Event::Filter.new(group, type, filter, year, sort_expression)
   end
 
   it 'lists events of descendant groups by default' do
@@ -36,8 +36,8 @@ describe Event::Filter do
   end
 
   it 'sorts according to sort_expression' do
-    expect(filter('layer', 'events.name').list_entries.first.name).to eq 'Eventus'
-    expect(filter('layer', 'events.name desc').list_entries.first.name).to eq 'Top Event'
+    expect(filter('layer', 'event_translations.name').list_entries.first.name).to eq 'Eventus'
+    expect(filter('layer', 'event_translations.name desc').list_entries.first.name).to eq 'Top Event'
   end
 
 end

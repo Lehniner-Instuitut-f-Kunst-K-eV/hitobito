@@ -11,7 +11,9 @@ class MailingListsController < CrudController
 
   self.permitted_attrs = [:name, :description, :publisher, :mail_name,
                           :additional_sender, :subscribable, :subscribers_may_post,
-                          :anyone_may_post, :main_email, :delivery_report, preferred_labels: []]
+                          :anyone_may_post, :main_email, :delivery_report,
+                          :mailchimp_list_id, :mailchimp_api_key,
+                          :mailchimp_include_additional_emails, preferred_labels: []]
 
   decorates :group, :mailing_list
 
@@ -25,10 +27,19 @@ class MailingListsController < CrudController
     super
   end
 
+  def show
+    super do |format|
+      format.json do
+        render json: MailingListSerializer.new(entry.decorate, controller: self)
+      end
+    end
+  end
+
   private
 
   def list_entries
-    super.order(:name)
+    scope = super.list
+    can?(:update, parent) ? scope : scope.subscribable
   end
 
   def authorize_class
@@ -36,7 +47,7 @@ class MailingListsController < CrudController
   end
 
   def load_labels
-    @labels = AdditionalEmail.uniq.pluck(:label)
+    @labels = AdditionalEmail.distinct.pluck(:label)
     @preferred_labels = entry.preferred_labels.sort
   end
 

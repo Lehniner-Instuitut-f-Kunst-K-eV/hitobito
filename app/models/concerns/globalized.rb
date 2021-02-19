@@ -18,16 +18,48 @@ module Globalized
       super(*columns, fallbacks_for_empty_translations: true)
     end
 
+    # Inspired by https://github.com/rails/actiontext/issues/32#issuecomment-450653800
+    def translates_rich_text(*columns)
+      translates(*columns)
+
+      columns.each do |col|
+        delegate col, to: :translation
+        delegate "#{col}=", to: :translation
+      end
+
+      after_update do
+        columns.each do |col|
+          translation.send(col).save if translation.send(col).changed?
+        end
+      end
+
+      const_get(:Translation).include globalized_translation(columns)
+    end
+
     def list
       with_translations.
         order(translated_label_column).
-        uniq
+        distinct
     end
 
     private
 
     def translated_label_column
       "#{reflect_on_association(:translations).table_name}.#{translated_attribute_names.first}"
+    end
+
+    def globalized_translation(columns)
+      Module.new do
+        extend ActiveSupport::Concern
+
+        included do
+          columns.each do |col|
+            has_rich_text col.to_sym
+          end
+
+          default_scope { includes(*columns.map { |col| "rich_text_#{col}".to_sym }) }
+        end
+      end
     end
   end
 

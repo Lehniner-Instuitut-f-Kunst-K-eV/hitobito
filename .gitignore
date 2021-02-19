@@ -34,6 +34,7 @@ doc/architecture/assets/**/*
 doc/development/development.html
 doc/development/assets/**/*
 spec/reports
+stats.json
 
 
 # precompiled assets
@@ -69,11 +70,22 @@ TAGS
 .idea
 .tool-versions
 .pry_history
+.project
 
 # for experiments with webpack
 
 /public/packs
 /public/packs-test
 /node_modules
+yarn-debug.log*
+.yarn-integrity
+
+# for those who want to reduce errors in the rails-log
+public/favicon.ico
+
+/public/packs
+/public/packs-test
+/node_modules
+/yarn-error.log
 yarn-debug.log*
 .yarn-integrity

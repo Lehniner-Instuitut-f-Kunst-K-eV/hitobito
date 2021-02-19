@@ -1,9 +1,4 @@
-# encoding: utf-8
-
-#  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
-#  hitobito and licensed under the Affero General Public License version 3
-#  or later. See the COPYING file at the top-level directory or at
-#  https://github.com/hitobito/hitobito.
+# frozen_string_literal: true
 
 Hitobito::Application.routes.draw do
 
@@ -14,16 +9,37 @@ Hitobito::Application.routes.draw do
   get '/healthz', to: 'healthz#show'
   get '/healthz/mail', to: 'healthz/mail#show'
 
-  language_scope do
+  use_doorkeeper_openid_connect
+  use_doorkeeper do # we only use tokens and authorizations
+    skip_controllers :applications, :token_info, :authorized_applications
+  end
 
-    get '/404', to: 'errors#404'
-    get '/500', to: 'errors#500'
-    get '/503', to: 'errors#503'
+  language_scope do
+    namespace :oauth do
+      resource :profile, only: :show
+      resources :applications do
+        resources :access_grants, only: :index
+        resources :access_tokens, only: :index
+      end
+      resources :access_grants, only: :destroy
+      resources :access_tokens, only: :destroy
+      resources :active_authorizations, only: [:index, :destroy]
+    end
+
+    %w(404 500 503).each do |code|
+      get code, to: 'errors#show', code: code
+    end
+
+
+    get '/addresses/query' => 'addresses#query'
 
     get '/people/query' => 'person/query#index', as: :query_people
+    get '/people/query_household' => 'person/query_household#index', as: :query_household
     get '/people/company_name' => 'person/company_name#index', as: :query_company_name
     get '/people/:id' => 'person/top#show', as: :person
     get '/events/:id' => 'event/top#show', as: :event
+
+    get 'list_groups' => 'group/lists#index', as: :list_groups
 
     resources :groups do
       member do
@@ -39,15 +55,20 @@ Hitobito::Application.routes.draw do
 
       end
 
-      resource :invoice_list, except: [:edit]
-      resource :invoice_config, only: [:edit, :show, :update]
+      resources :settings, only: [:index, :edit, :update], controller: 'group_settings', as: 'group_settings'
 
       resources :invoices do
         resources :payments, only: :create
       end
       resources :invoice_articles
+      resource :invoice_config, only: [:edit, :show, :update]
 
+      resource :invoice_list, except: [:edit, :show]
+      resources :invoice_lists, only: [:index] do
+        resources :invoices, only: [:index]
+      end
       resource :payment_process, only: [:new, :show, :create]
+
       resources :notes, only: [:index, :create, :destroy]
 
       resources :people, except: [:new, :create] do
@@ -60,13 +81,17 @@ Hitobito::Application.routes.draw do
           get 'log' => 'person/log#index'
           get 'colleagues' => 'person/colleagues#index'
           get 'invoices' => 'person/invoices#index'
+          get 'messages' => 'person/messages#index'
         end
 
         resources :notes, only: [:create, :destroy]
         resources :qualifications, only: [:new, :create, :destroy]
         get 'qualifications' => 'qualifications#new' # route required for language switch
 
+        resources :assignments, only: [:show, :edit, :update]
         scope module: 'person' do
+          resources :assignments, only: [:index]
+          resources :subscriptions, only: [:index, :create, :destroy]
           post 'tags' => 'tags#create'
           delete 'tags' => 'tags#destroy'
           get 'tags/query' => 'tags#query'
@@ -74,9 +99,27 @@ Hitobito::Application.routes.draw do
           delete 'impersonate' => 'impersonation#destroy'
           get 'households' => 'households#new'
         end
-
       end
 
+      resources :person_duplicates, only: [:index] do
+        member do
+          get 'merge' => 'person_duplicates/merge#new', as: 'new_merge'
+          post 'merge' => 'person_duplicates/merge#create', as: 'merge'
+          get 'ignore' => 'person_duplicates/ignore#new', as: 'new_ignore'
+          post 'ignore' => 'person_duplicates/ignore#create', as: 'ignore'
+        end
+      end
+
+      resource :tag_list, only: [:destroy, :create, :new] do
+        get 'deletable' => 'tag_lists#deletable'
+      end
+
+      resource :role_list, only: [:destroy, :create, :new] do
+        get 'deletable' => 'role_lists#deletable'
+        get 'move'      => 'role_lists#move'
+        get 'movable'   => 'role_lists#movable'
+        put 'move'      => 'role_lists#update'
+      end
       resources :roles, except: [:index, :show] do
         collection do
           get :details
@@ -101,11 +144,13 @@ Hitobito::Application.routes.draw do
           as: 'person_add_request_ignored_approvers'
 
       get 'public_events/:id' => 'public_events#show', as: :public_event
+      get 'events/participation_lists/new' => 'event/participation_lists#new'
 
       resources :events do
         collection do
           get 'simple' => 'events#index'
           get 'course' => 'events#index', type: 'Event::Course'
+          get 'typeahead' => 'events#typeahead'
         end
 
         scope module: 'event' do
@@ -134,6 +179,7 @@ Hitobito::Application.routes.draw do
 
           resources :attachments, only: [:create, :destroy]
 
+          resource :participation_lists, only: :create
           resources :participations do
             collection do
               get 'contact_data', controller: 'participation_contact_datas', action: 'edit'
@@ -155,6 +201,8 @@ Hitobito::Application.routes.draw do
       end
 
       resources :mailing_lists do
+        resources :messages
+
         resources :subscriptions, only: [:index, :destroy] do
           collection do
             resources :person, only: [:new, :create], controller: 'subscriber/person'
@@ -163,7 +211,7 @@ Hitobito::Application.routes.draw do
             resources :exclude_person, only: [:new, :create], controller: 'subscriber/exclude_person'
             get 'exclude_person' => 'subscriber/exclude_person#new' # route required for language switch
 
-            resources :group, only: [:new, :create], controller: 'subscriber/group' do
+            resources :group, only: [:new, :create, :edit, :update], controller: 'subscriber/group' do
               collection do
                 get :query
                 get :roles
@@ -181,6 +229,8 @@ Hitobito::Application.routes.draw do
             resource :user, only: [:create, :destroy], controller: 'subscriber/user'
           end
         end
+
+        resources :mailchimp_synchronizations, only: [:create]
       end
 
       resource :csv_imports, only: [:new, :create], controller: 'person/csv_imports' do
@@ -191,6 +241,8 @@ Hitobito::Application.routes.draw do
           get 'preview'        => 'person/csv_imports#new' # route required for language switch
         end
       end
+
+      resources :service_tokens
 
     end # resources :group
 
@@ -203,6 +255,12 @@ Hitobito::Application.routes.draw do
     resources :event_kinds, module: 'event', controller: 'kinds'
 
     resources :qualification_kinds
+    resources :tags, except: :show do
+      collection do
+        get 'merge' => 'tags/merge#new', as: 'new_merge'
+        post 'merge' => 'tags/merge#create', as: 'merge'
+      end
+    end
 
     resources :label_formats do
       collection do
@@ -213,6 +271,10 @@ Hitobito::Application.routes.draw do
     resources :custom_contents, only: [:index, :edit, :update]
     get 'custom_contents/:id' => 'custom_contents#edit'
 
+    resource :event_feed, only: [:show, :update]
+    resources :help_texts, except: [:show]
+
+    devise_for :service_tokens, only: [:sessions]
     devise_for :people, skip: [:registrations], path: "users"
     as :person do
       get 'users/edit' => 'devise/registrations#edit', :as => 'edit_person_registration'
@@ -231,6 +293,14 @@ Hitobito::Application.routes.draw do
     get 'downloads/:id' => 'async_downloads#show'
     get 'downloads/:id/exists' => 'async_downloads#exists?'
 
+    get 'synchronizations/:id' => 'async_synchronizations#show'
+
+    resources :assignments, only: [:new, :create]
+    resources :table_displays, only: [:create]
+    resources :messages, only: [:show] do
+      resource :preview, only: [:show], module: :messages
+      resource :dispatch, only: [:create, :show], module: :messages
+    end
   end # scope locale
 
   # The priority is based upon order of creation:

@@ -7,6 +7,11 @@
 
 application:
   name: hitobito  # set same name in email.sender and email.mass_recipient
+  logo:
+    image: logo.png # put under app/assets/images
+    height: 30 # pixel, has to bet set as the logo is a background image,
+    width: 230 # pixel, will also set the minimal width of the navigation
+    background_color: none # optional backgroundcolor, creates a box around the logo, if changed from 'none'
   footer:
     #logo_image: logo_hitobito.png
     logo_url: http://puzzle.ch
@@ -18,7 +23,12 @@ application:
 
 <% mail_domain = ENV['RAILS_MAIL_DOMAIN'].presence ||
                  ENV['RAILS_HOST_NAME'].presence ||
-                 'localhost' %>
+                 'localhost'
+   hostname    = ENV['RAILS_HOST_NAME'].presence || 'localhost:3000'
+   protocol    = %w(true yes 1).include?(ENV['RAILS_HOST_SSL']) ? 'https' : 'http'
+%>
+currency:
+  unit: CHF
 
 email:
   # Sender for all emails sent by the application
@@ -63,6 +73,7 @@ phone_number:
     - Mutter
     - Fax
     - Andere
+  default_country: CH
 
 social_account:
   predefined_labels:
@@ -127,6 +138,7 @@ role:
 people:
   # either name or role
   default_sort: name
+  abos: true
 
 event:
   attachments:
@@ -135,3 +147,65 @@ event:
 
 downloads:
   folder: <%= Rails.root.join('tmp', 'downloads') %>
+
+impersonate:
+  notify: true
+
+help_text_blacklist:
+  event/kind:
+    - precondition_qualification_kinds
+  event/participation:
+    - answers_attributes
+  event:
+    - hidden_contact_attrs
+    - required_contact_attrs
+  group:
+    - phone_numbers_attributes
+    - remove_logo
+  invoice_config:
+    - payment_reminder_configs_attributes
+  invoice:
+    - invoice_items_attributes
+    - recipient_id
+  mailing_list:
+    - anyone_may_post
+    - delivery_report
+  oauth_application:
+    - confidential
+    - redirect_uris
+    - scopes
+  person:
+    - household_people_ids
+    - relations_to_tails_attributes
+    - phone_numbers_attributes
+
+worker_heartbeats:
+  check_job:
+    # Interval in seconds between detection and unlocking of hanging jobs
+    interval: 60
+
+oidc:
+  issuer: <%= protocol + "://" + hostname %>
+  signing_key: <%= ENV['JWT_SIGNING_KEY'].to_s.lines %>
+
+table_displays: true
+
+mailchimp:
+  max_attempts: 25
+  enabled: true
+
+addresses:
+  url: https://webservices.post.ch:17017/IN_ZOPAxFILES/v1/groups/1062/versions/latest/file/gateway
+  token: <%= ENV['ADDRESSES_TOKEN'] %>
+  imported_countries:
+    - CH
+
+messages:
+  enable_writing: false
+  pdf:
+    logo: <%= Rails.root.join("app/javascript/images/logo-black.png") %>
+    preview: <%= Rails.root.join("app/javascript/images/preview.png") %>
+    address: |-
+      hitobito AG
+      Belpstrasse 37
+      3007 Bern

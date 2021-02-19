@@ -1,14 +1,16 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2017, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2021, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
 
-class Event::ParticipationsController < CrudController
+class Event::ParticipationsController < CrudController # rubocop:disable Metrics/ClassLength
 
-  include Concerns::RenderPeopleExports
-  include Concerns::AsyncDownload
+  include RenderPeopleExports
+  include AsyncDownload
+  include Api::JsonPaging
+  include ActionView::Helpers::SanitizeHelper
 
   self.nesting = Group, Event
 
@@ -18,17 +20,17 @@ class Event::ParticipationsController < CrudController
 
   self.remember_params += [:filter]
 
-  self.sort_mappings = { last_name:  'people.last_name',
+  self.sort_mappings = { last_name: 'people.last_name',
                          first_name: 'people.first_name',
                          roles: lambda do |event|
                                   Person.order_by_name_statement.unshift(
                                     Event::Participation.order_by_role_statement(event)
                                   )
                                 end,
-                         nickname:   'people.nickname',
-                         zip_code:   'people.zip_code',
-                         town:       'people.town',
-                         birthday:   'people.birthday' }
+                         nickname: 'people.nickname',
+                         zip_code: 'people.zip_code',
+                         town: 'people.town',
+                         birthday: 'people.birthday' }
 
 
   decorates :group, :event, :participation, :participations, :alternatives
@@ -58,21 +60,30 @@ class Event::ParticipationsController < CrudController
     set_active
     with_person_add_request do
       created = with_callbacks(:create, :save) { save_entry }
+      directly_assign_place if created
       respond_with(entry, success: created, location: return_path)
     end
   end
 
-  def index
+  def index # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
     respond_to do |format|
       format.html do
         entries
         @person_add_requests = fetch_person_add_requests
       end
       format.pdf   { render_pdf(filter_entries.collect(&:person), group) }
-      format.csv   { render_tabular_in_background(:csv) && redirect_to(action: :index) }
+      format.csv   { render_tabular_in_background(:csv) }
       format.vcf   { render_vcf(filter_entries.includes(person: :phone_numbers).collect(&:person)) }
-      format.xlsx  { render_tabular_in_background(:xlsx) && redirect_to(action: :index) }
+      format.xlsx  { render_tabular_in_background(:xlsx) }
       format.email { render_emails(filter_entries.collect(&:person)) }
+      format.json  { render_entries_json(filter_entries) }
+    end
+  end
+
+  def show
+    respond_to do |format|
+      format.html
+      format.json { render_entry_json }
     end
   end
 
@@ -99,6 +110,32 @@ class Event::ParticipationsController < CrudController
 
   private
 
+  def render_entry_json
+    render json: EventParticipationSerializer.new(
+      entry,
+      {
+        group: parents.first,
+        event: parents.last,
+        controller: self
+      }
+    )
+  end
+
+  def render_entries_json(entries)
+    paged_entries = entries.page(params[:page])
+    render json: [paging_properties(paged_entries),
+                  ListSerializer.new(paged_entries.decorate,
+                                     group: group,
+                                     event: event,
+                                     page: params[:page],
+                                     serializer: EventParticipationSerializer,
+                                     controller: self)].inject(&:merge)
+  end
+
+  def sort_mappings_with_indifferent_access
+    super.merge(current_person.table_display_for(parent).sort_statements(parent.question_ids))
+  end
+
   def with_person_add_request(&block)
     creator = Person::AddRequest::Creator::Event.new(entry.roles.first, current_ability)
     msg = creator.handle(&block)
@@ -109,8 +146,9 @@ class Event::ParticipationsController < CrudController
     filter = event_participation_filter
     records = filter.list_entries.page(params[:page])
     @counts = filter.counts
+    sort_param = params[:sort]
 
-    records = records.reorder(sort_expression) if params[:sort] && sortable?(params[:sort])
+    records = records.reorder(Arel.sql(sort_expression)) if sort_param && sortable?(sort_param)
     Person::PreloadPublicAccounts.for(records.collect(&:person))
     records
   end
@@ -163,7 +201,7 @@ class Event::ParticipationsController < CrudController
   def person_id
     return current_user.try(:id) unless event.supports_applications
 
-    if model_params && model_params.key?(:person_id)
+    if model_params&.key?(:person_id)
       params[:for_someone_else] = true
       model_params.delete(:person)
       model_params.delete(:person_id)
@@ -180,6 +218,7 @@ class Event::ParticipationsController < CrudController
     unless type.participant?
       raise ActiveRecord::RecordNotFound, "No participant role '#{role_type}' found"
     end
+
     role_type
   end
 
@@ -197,6 +236,13 @@ class Event::ParticipationsController < CrudController
   def init_answers
     @answers = entry.init_answers
     entry.init_application
+  end
+
+  def directly_assign_place
+    if event.waiting_list_available? && event.places_available? && !event.attr_used?(:priorization)
+      assigner = Event::ParticipantAssigner.new(event, @participation)
+      assigner.add_participant if assigner.createable?
+    end
   end
 
   def load_priorities
@@ -226,9 +272,10 @@ class Event::ParticipationsController < CrudController
 
   # A label for the current entry, including the model name, used for flash
   def full_entry_label
-    translate(:full_entry_label, model_label: models_label(false),
-                                 person: h(entry.person),
-                                 event: h(entry.event)).html_safe
+    label = translate(:full_entry_label, model_label: models_label(false),
+                                         person: h(entry.person),
+                                         event: h(entry.event))
+    sanitize(label, tags: %w(i))
   end
 
   def send_confirmation_email
@@ -247,6 +294,7 @@ class Event::ParticipationsController < CrudController
     if action_name.to_s == 'create'
       notice = translate(:success, full_entry_label: full_entry_label)
       notice += '<br />' + translate(:instructions) if append_mailing_instructions?
+      flash[:alert] ||= translate(:waiting_list) if entry.waiting_list?
       flash[:notice] ||= notice
     else
       super
@@ -279,7 +327,8 @@ class Event::ParticipationsController < CrudController
   end
 
   def event_participation_filter
-    Event::ParticipationFilter.new(event.id, current_user.id, params)
+    user_id = current_user.try(:id) || service_token_user.try(:id)
+    Event::ParticipationFilter.new(event.id, user_id, params)
   end
 
 end

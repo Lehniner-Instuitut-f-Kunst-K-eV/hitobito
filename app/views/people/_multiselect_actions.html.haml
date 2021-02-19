@@ -1,0 +1,26 @@
+.hidden
+  .multiselect
+    .count
+    = ti('selected')
+    .actions
+      = action_button(translate('.add_role'),
+        new_group_role_list_path(@group),
+        :plus,
+        data: { checkable: true, method: :get },
+        remote: true)
+
+      = action_button(translate('.move_role'),
+        move_group_role_list_path(@group, range: params[:range]),
+        'arrow-right',
+        data: { checkable: true, method: :get },
+        remote: true)
+
+      = action_button(translate('.remove_role'),
+        deletable_group_role_list_path(@group, range: params[:range]),
+        :'trash-alt',
+        data: { checkable: true, method: :get },
+        remote: true)
+
+      = Dropdown::ParticipationLists.new(self, @group, translate('.add_participation'))
+
+      = Dropdown::TagLists.new(self, @group, translate('.tag_lists'))

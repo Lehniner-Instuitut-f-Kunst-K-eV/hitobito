@@ -1,6 +1,6 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -9,9 +9,13 @@ require 'spec_helper'
 
 describe MailRelay::Base do
 
-  let(:simple)  { Mail.new(File.read(Rails.root.join('spec', 'fixtures', 'email', 'simple.eml'))) }
-  let(:regular) { Mail.new(File.read(Rails.root.join('spec', 'fixtures', 'email', 'regular.eml'))) }
-  let(:list)    { Mail.new(File.read(Rails.root.join('spec', 'fixtures', 'email', 'list.eml'))) }
+  let(:mails)                  { Rails.root.join('spec', 'fixtures', 'email') }
+  let(:simple)                 { Mail.new(mails.join('simple.eml').read) }
+  let(:regular)                { Mail.new(mails.join('regular.eml').read) }
+  let(:list)                   { Mail.new(mails.join('list.eml').read) }
+  let(:multiple)               { Mail.new(mails.join('multiple.eml').read) }
+  let(:multiple_both)          { Mail.new(mails.join('multiple_both.eml').read) }
+  let(:multiple_x_original_to) { Mail.new(mails.join('multiple_x_original_to.eml').read) }
 
   let(:relay) { MailRelay::Base.new(message) }
 
@@ -48,6 +52,27 @@ describe MailRelay::Base do
   end
 
   describe '#envelope_receiver_name' do
+    context 'multiple' do
+      let(:message) { multiple }
+
+      it 'returns single receiver' do
+        expect(relay.envelope_receiver_name).to eq('kalei.kontakt')
+      end
+    end
+    context 'multiple both' do
+      let(:message) { multiple_both }
+
+      it 'returns single receiver' do
+        expect(relay.envelope_receiver_name).to eq('kalei.kontakt')
+      end
+    end
+    context 'multiple x-original-to' do
+      let(:message) { multiple_x_original_to }
+
+      it 'returns single receiver' do
+        expect(relay.envelope_receiver_name).to eq('teststatus.zha0')
+      end
+    end
     context 'regular' do
       let(:message) { regular }
 
@@ -87,7 +112,6 @@ describe MailRelay::Base do
       end
 
     end
-
   end
 
   describe '.relay_current' do
@@ -122,8 +146,10 @@ describe MailRelay::Base do
         MailRelay::Base.relay_current
       end.to change { MailLog.count }.by(1)
 
-      mail_log = MailLog.find_by(mail_hash: '1b498b5a776254310c3699688680b37a')
-      expect(mail_log.mail_subject).to eq(simple.subject)
+      mail_log = MailLog.find_by(mail_hash: 'e63f22f5d97d8030174951265555794f')
+      expect(mail_log.message.subject).to eq(simple.subject)
+      expect(mail_log.message.state).to eq('failed')
+      expect(mail_log.message.sent_at).to eq(mail_log.updated_at)
       expect(mail_log.mail_from).to eq(simple.from.first)
       expect(mail_log.status).to eq('sender_rejected')
     end
@@ -140,8 +166,10 @@ describe MailRelay::Base do
         MailRelay::Base.relay_current
       end.to change { MailLog.count }.by(1)
 
-      mail_log = MailLog.find_by(mail_hash: '1b498b5a776254310c3699688680b37a')
-      expect(mail_log.mail_subject).to eq(simple.subject)
+      mail_log = MailLog.find_by(mail_hash: 'e63f22f5d97d8030174951265555794f')
+      expect(mail_log.message.subject).to eq(simple.subject)
+      expect(mail_log.message.state).to eq('failed')
+      expect(mail_log.message.sent_at).to eq(mail_log.updated_at)
       expect(mail_log.mail_from).to eq(simple.from.first)
       expect(mail_log.status).to eq('unkown_recipient')
     end
@@ -158,11 +186,32 @@ describe MailRelay::Base do
         expect(exception.message).to match(
           /Mail with subject 'Re: Jubla Gruppen' has already been processed before and is skipped/)
         expect(exception.message).to match(
-          /1b498b5a776254310c3699688680b37a$/)
+          /e63f22f5d97d8030174951265555794f$/)
       end
 
       MailRelay::Base.relay_current
     end
+
+    it 'skips already processed mail, does not sends airbrake notification if mail_log is completed' do
+      log = MailLog.build(simple)
+      log.update(status: 2)
+      log.save!
+
+      expect(Mail).to receive(:find_and_delete) do |options, &block|
+        block.call(simple)
+        [simple]
+      end
+
+      expect(Airbrake).not_to receive(:notify) do |exception|
+        expect(exception.message).to match(
+          /Mail with subject 'Re: Jubla Gruppen' has already been processed before and is skipped/)
+        expect(exception.message).to match(
+          /e63f22f5d97d8030174951265555794f$/)
+      end
+
+      MailRelay::Base.relay_current
+    end
+
 
     it 'creates mail log entry for sent bulk mail' do
       expect(Mail).to receive(:find_and_delete) do |options, &block|
@@ -174,13 +223,14 @@ describe MailRelay::Base do
         MailRelay::Base.relay_current
       end.to change { MailLog.count }.by(1)
 
-      mail_log = MailLog.find_by(mail_hash: '1b498b5a776254310c3699688680b37a')
-      expect(mail_log.mail_subject).to eq(simple.subject)
+      mail_log = MailLog.find_by(mail_hash: 'e63f22f5d97d8030174951265555794f')
+      expect(mail_log.message.subject).to eq(simple.subject)
+      expect(mail_log.message.state).to eq('finished')
+      expect(mail_log.message.sent_at).to eq(mail_log.updated_at)
       expect(mail_log.mail_from).to eq(simple.from.first)
       expect(mail_log.status).to eq('completed')
     end
 
-    # our mysql instances to not support storeing emojis
     it 'creates mail log entry for mail with emoji in subject' do
       emoji_subject = "⛴ Unvergessliche Erlebnisse"
       simple.subject = emoji_subject
@@ -193,8 +243,8 @@ describe MailRelay::Base do
         MailRelay::Base.relay_current
       end.to change { MailLog.count }.by(1)
 
-      mail_log = MailLog.find_by(mail_hash: '1b498b5a776254310c3699688680b37a')
-      expect(mail_log.mail_subject).to eq("? Unvergessliche Erlebnisse")
+      mail_log = MailLog.find_by(mail_hash: 'e63f22f5d97d8030174951265555794f')
+      expect(mail_log.message.subject).to eq("⛴ Unvergessliche Erlebnisse")
       expect(mail_log.mail_from).to eq(simple.from.first)
       expect(mail_log.status).to eq('completed')
     end
@@ -221,6 +271,19 @@ describe MailRelay::Base do
       expect(MailRelay::Base).to receive(:new).exactly(5).times
 
       expect { MailRelay::Base.relay_current }.to raise_error(MailRelay::Error)
+    end
+
+    it 'logs EOF Error without creating MailLog' do
+      expect(Mail).to receive(:find_and_delete) do |options, &block|
+        fail EOFError.new('ouch')
+      end
+
+      expect do
+        MailRelay::Base.relay_current
+      end.not_to change { MailLog.count }
+
+      mail_log = MailLog.find_by(mail_hash: 'e63f22f5d97d8030174951265555794f')
+      expect(mail_log).not_to be_present
     end
   end
 end

@@ -5,6 +5,14 @@
 
 module PeopleFilterHelper
 
+  def people_filter_attributes_for_select
+    Person.filter_attrs.transform_values { |v| v[:label] }.invert.sort
+  end
+
+  def people_filter_types_for_data_attribute
+    Person.filter_attrs.transform_values { |v| v[:type] }.to_h.to_json
+  end
+
   def people_filter_attribute_forms(filter)
     return unless filter
 
@@ -17,28 +25,40 @@ module PeopleFilterHelper
     people_filter_attribute_form(nil, 0, disabled: :disabled)
   end
 
-  # rubocop:disable AbcSize, MethodLength
-  def people_filter_attribute_form(attr = nil, count = 0, html_options = {})
+  def people_filter_attribute_form(attr, count, html_options = {}) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    key, constraint, value = attr.to_h.symbolize_keys.slice(:key, :constraint, :value).values
+    type = Person.filter_attrs[key.to_sym][:type] if key
     time = (Time.zone.now.to_f * 1000).to_i + count
 
+    filters = [[t('.match'), :match], [t('.equal'), :equal]]
+    if key.blank? || type == :integer
+      filters += [[t('.smaller'), :smaller], [t('.greater'), :greater]]
+    end
+
     content_tag(:div, class: 'people_filter_attribute_form controls controls-row') do
-      content = select(:filters, "attributes[#{time}][key]",
-                       Person.filter_attrs_list,
-                       { selected: (attr[:key] if attr) },
-                       html_options.merge(class: 'span attribute_key_dropdown'))
+      content = hidden_field_tag("filters[attributes][#{time}][key]",
+                                 key,
+                                 disabled: attr.blank?,
+                                 class: 'attribute_key_hidden_field')
+
+      content << select(:filters, "attributes[#{time}][key]",
+                        people_filter_attributes_for_select,
+                        { selected: key },
+                        html_options.merge(disabled: true, class: 'span attribute_key_dropdown'))
 
       content << select(:filters, "attributes[#{time}][constraint]",
-                        [[t('.match'), :match], [t('.equal'), :equal]],
-                        { selected: (attr[:constraint] if attr) },
+                        filters,
+                        { selected: constraint },
                         html_options.merge(class: 'span2 attribute_constraint_dropdown'))
 
       content << text_field_tag("filters[attributes][#{time}][value]",
-                                (attr[:value] if attr),
+                                value,
                                 html_options.merge(class: 'span2 attribute_value_input'))
 
-      content << link_to(icon(:trash), '#',
+      content << link_to(icon(:'trash-alt', filled: false), '#',
                          class: 'remove_filter_attribute',
                          style: 'padding-left: 7px; line-height: 2em')
     end
   end
+
 end

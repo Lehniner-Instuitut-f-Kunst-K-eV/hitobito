@@ -1,6 +1,6 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2020, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -9,9 +9,13 @@
 # Table name: event_answers
 #
 #  id               :integer          not null, primary key
+#  answer           :string(255)
 #  participation_id :integer          not null
 #  question_id      :integer          not null
-#  answer           :string(255)
+#
+# Indexes
+#
+#  index_event_answers_on_participation_id_and_question_id  (participation_id,question_id) UNIQUE
 #
 
 class Event::Answer < ActiveRecord::Base
@@ -33,10 +37,10 @@ class Event::Answer < ActiveRecord::Base
 
   # override to handle array values submitted from checkboxes
   def answer=(text)
-    if question_with_choices? && question.multiple_choices? && text.is_a?(Array)
+    if question_with_choices? && question_with_checkboxes? && text.is_a?(Array)
       valid_range = (0...question.choice_items.size)
       # have submit index + 1 and handle reset via index 0
-      index_array = text.map(&:to_i).map { |i| i - 1 }
+      index_array = text.map { |i| i.to_i - 1 }
 
       super(valid_index_based_values(index_array, valid_range) || nil)
     else
@@ -59,6 +63,10 @@ class Event::Answer < ActiveRecord::Base
 
   def question_with_choices?
     question && question.choice_items.present?
+  end
+
+  def question_with_checkboxes?
+    question.multiple_choices? || question.one_answer_available?
   end
 
   def valid_index_based_values(index_array, valid_range)

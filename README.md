@@ -1,32 +1,22 @@
-# Welcome to hitobito
+![hitobito logo](https://hitobito.com/images/logo.svg)
 
-hitobito is an open source web application to manage complex group hierarchies with members, events and a lot more.
+#
+# Welcome to hitobito 人人
 
-[![Build Status](https://travis-ci.org/hitobito/hitobito.svg?branch=master)](https://travis-ci.org/hitobito/hitobito)
+hitobito is an open source web application to manage organisation and communities with complex group hierarchies with members, events, courses, mailings, communication and a lot more.
+
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/hitobito/hitobito/graphs/commit-activity)
+[![Documentation Status](https://readthedocs.org/projects/hitobito/badge/?version=latest)](https://hitobito.readthedocs.io/?badge=latest)
+[![GitHub](https://img.shields.io/github/license/hitobito/hitobito)](https://github.com/hitobito/hitobito/blob/master/LICENSE)
+[![Open Source Helpers](https://www.codetriage.com/hitobito/hitobito/badges/users.svg)](https://www.codetriage.com/hitobito/hitobito)
+[![Build Status](https://travis-ci.com/hitobito/hitobito.svg?branch=master)](https://travis-ci.com/hitobito/hitobito)
 
 ## Development
 
-Hitobito is a Ruby on Rails application that runs on Ruby >= 2.2 and Rails 4.
-It might run with minor tweaks on older Rubies, but is not tested against those
-versions.
+Check out our [development kit](https://github.com/hitobito/development/)
 
-To get going, after you got a copy of hitobito and at least one wagon with an organization
-structure setup as described below, issue the following commands in the main directory:
+More detailed development documentation can be found in [doc/development](doc/development).
 
-    sudo yum install sqlite memcached sphinxsearch imagemagick  # install system dependencies
-
-    bundle               # install gem dependencies
-    rake db:create       # create a development database (Sqlite3)
-    rake db:setup:all    # run migrations and load seed data of the app and all wagons
-    rails server         # start the rails server
-
-To start the search server, run background jobs or the development mail catcher, run:
-
-    rake ts:start
-    rake jobs:work
-    mailcatcher -v -f
-
-A more detailed development documentation in German can be found in [doc/development](doc/development).
 This is where you also find some [Deployment Instructions](doc/development/02_deployment.md).
 
 ## Architecture
@@ -54,6 +44,7 @@ An example group type definition might look like this:
       class Role < Leader
         self.permissions = [:layer_full, :contact_data]
       end
+
 
       class Member < Role
         self.permissions = [:group_read]
@@ -87,17 +78,36 @@ With Wagons, arbitrary features and extensions may be created for hitobito.
 As mentioned above, as there are no group types coming from hitobito itself,
 at least one wagon is required to define group types in order to use hitobito.
 
-See [Wagon Guidelines](doc/development/03_guidelines.md) or [Wagons](http://github.com/codez/wagons)
+See [Wagon Guidelines](doc/development/04_wagons.md) or [Wagons](http://github.com/codez/wagons)
 for more information on wagons and its available rake tasks.
 
 
+## Community
+hitobito made with 💙 and the incredible community:
+
+* Jungwacht Blauring Schweiz
+* [Puzzle ITC GmbH](https://www.puzzle.ch)
+* Pfadibewegung Schweiz
+* hitobito AG
+* CEVI Regionalverband ZH-SH-GL / CEVI Schweiz
+* Dachverband Schweizer Jugendparlamente DSJ
+* Insieme Schweiz
+* Forschungstelle Digitale Nachhaltigkeit
+* CH Open
+* Digital Impact Network
+* Schweizer Blasmusikverband
+* GLP
+* CVP Schweiz
+* Stiftung für junge Auslandschweizer
+
+Please contact [KunoKunz](https://github.com/KunoKunz) if you want to be part of our community.
+
 ## License
 
-hitobito is released under the GNU Affero General Public License.
-Copyright 2012-2015 by Jungwacht Blauring Schweiz, Puzzle ITC GmbH, Pfadibewegung Schweiz,
-CEVI Regionalverband ZH-SH-GL, Insieme Schweiz.
-See COPYING for more details.
+hitobito is released under the [GNU Affero General Public License](LICENSE).
 
-hitobito was developed by [Puzzle ITC GmbH](http://puzzle.ch).
+The hitobito logo is a registered trademark of hitobito LTD, Switzerland.
 
-The hitobito logo is a registered trademark of hitobito LTD, Switzerland. Please contact [KunoKunz](https://github.com/KunoKunz) if you want to use the logo and be part of our community.
+---
+
+btw: hitobito 人人 [means](https://www.wordsense.eu/%E4%BA%BA%E4%BA%BA/) "everyone"

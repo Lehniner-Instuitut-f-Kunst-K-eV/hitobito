@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -50,8 +50,10 @@ describe Event do
     let(:event) { events(:top_event) }
 
     subject do
-      Fabricate(Event::Role::Leader.name.to_sym, participation:  Fabricate(:event_participation, event: event))
-      Fabricate(Event::Role::Participant.name.to_sym, participation:  Fabricate(:event_participation, event: event))
+      Fabricate(Event::Role::Leader.name.to_sym,
+                participation: Fabricate(:event_participation, event: event))
+      Fabricate(Event::Role::Participant.name.to_sym,
+                participation: Fabricate(:event_participation, event: event))
       p = Fabricate(:event_participation, event: event)
       Fabricate(Event::Role::Participant.name.to_sym, participation: p)
       Fabricate(Event::Role::Participant.name.to_sym, participation: p, label: 'Irgendwas')
@@ -84,7 +86,7 @@ describe Event do
     context 'with closing date in the future' do
       before { subject.application_closing_at = Time.zone.today + 1 }
 
-       it 'is open without maximum participant' do
+      it 'is open without maximum participant' do
         is_expected.to be_application_possible
       end
 
@@ -258,7 +260,8 @@ describe Event do
       end
 
       it 'does find event ending at 5 to 12' do
-        event.dates.create(start_at: 2.days.ago, finish_at: Time.zone.now.midnight + 23.hours + 55.minutes)
+        event.dates.create(start_at: 2.days.ago,
+                           finish_at: Time.zone.now.midnight + 23.hours + 55.minutes)
         is_expected.to eq [event]
       end
 
@@ -276,6 +279,58 @@ describe Event do
         event.dates.create(start_at: Time.zone.now.midnight + 5.minutes)
         is_expected.to eq [event]
       end
+    end
+
+    context 'between' do
+
+      it 'finds nothing if params nil' do
+        event.dates.create(start_at: 1.year.ago, finish_at: 1.year.from_now)
+        expect(Event.between(nil, nil)).to be_blank
+        expect(Event.between(nil, Time.zone.now)).to be_blank
+        expect(Event.between(Time.zone.now, nil)).to be_blank
+      end
+
+      context 'event with end and start date' do
+        before do
+          event.dates.create(start_at: 1.day.from_now, finish_at: 10.days.from_now)
+        end
+
+        it 'finds event with start_at overlay' do
+          expect(Event.between(Time.zone.now, 2.days.from_now)).to eq [event]
+        end
+
+        it 'finds event with finish_at overlay' do
+          expect(Event.between(9.days.from_now, 11.days.from_now)).to eq [event]
+        end
+
+        it 'finds event where start and finish_at is between dates' do
+          expect(Event.between(Time.zone.now, 11.days.from_now)).to eq [event]
+        end
+
+        it 'finds event if the overlap is between start and finish_at' do
+          expect(Event.between(2.days.from_now, 9.days.from_now)).to eq [event]
+        end
+
+        it 'does not find event if finish_at before start date' do
+          expect(Event.between(11.days.from_now, 20.days.from_now)).to be_blank
+        end
+
+        it 'does not find event if start_at after end date' do
+          expect(Event.between(1.day.ago, Time.zone.now)).to be_blank
+        end
+      end
+
+      context 'event with only start date' do
+        before do
+          event.dates.create(start_at: 1.day.from_now)
+        end
+
+        it 'finds event with start_at overlay' do
+          expect(Event.between(Time.zone.now, 2.days.from_now)).to eq [event]
+        end
+
+      end
+
     end
   end
 
@@ -343,7 +398,11 @@ describe Event do
       d = Time.zone.local(2012, 12, 12).to_date
       e.dates.create(label: 'foo', start_at: d, finish_at: d)
       ed = e.dates.first
-      e.update_attributes(dates_attributes: { '0' => { start_at_date: d, start_at_hour: 18, start_at_min: 10, id: ed.id } })
+      e.update(
+        dates_attributes: {
+          '0' => { start_at_date: d, start_at_hour: 18, start_at_min: 10, id: ed.id }
+        }
+      )
       expect(e.dates.first.start_at).to eq(Time.zone.local(2012, 12, 12, 18, 10))
     end
 
@@ -352,8 +411,8 @@ describe Event do
       d2 = Time.zone.local(2012, 12, 13).to_date
       e.dates.create(label: 'foo', start_at: d1, finish_at: d1)
       ed = e.dates.first
-      e.update_attributes(dates_attributes: { '0' => { finish_at_date: d2, id: ed.id } })
-      expect(e.dates.first.finish_at).to eq(Time.zone.local(2012, 12, 13, 00, 00))
+      e.update(dates_attributes: { '0' => { finish_at_date: d2, id: ed.id } })
+      expect(e.dates.first.finish_at).to eq(Time.zone.local(2012, 12, 13, 0, 0))
     end
 
   end
@@ -364,16 +423,20 @@ describe Event do
     let(:participation) { Fabricate(:event_participation, event: event) }
 
     it 'should have 2 different labels' do
-      Fabricate(Event::Role::Participant.name.to_sym, participation: participation, label: 'Foolabel')
-      Fabricate(Event::Role::Participant.name.to_sym, participation: participation, label: 'Foolabel')
-      Fabricate(Event::Role::Participant.name.to_sym, participation: participation, label: 'Just label')
+      Fabricate(Event::Role::Participant.name.to_sym,
+                participation: participation, label: 'Foolabel')
+      Fabricate(Event::Role::Participant.name.to_sym,
+                participation: participation, label: 'Foolabel')
+      Fabricate(Event::Role::Participant.name.to_sym,
+                participation: participation, label: 'Just label')
       event.reload
 
       expect(event.participation_role_labels.count).to eq 2
     end
 
     it 'should have no labels' do
-      Fabricate(Event::Role::Participant.name.to_sym, participation: Fabricate(:event_participation, event: event))
+      Fabricate(Event::Role::Participant.name.to_sym,
+                participation: Fabricate(:event_participation, event: event))
       Fabricate(Event::Role::Participant.name.to_sym, participation: participation)
       event.reload
 
@@ -407,8 +470,9 @@ describe Event do
 
       it 'should be zero if no participations/applications available' do
         expect(event.participations.count).to eq 0
-        expect(Event::Application.where('priority_2_id = ? OR priority_3_id = ?', event.id, event.id).
-          count).to eq 0
+        expect(
+          Event::Application.where('priority_2_id = ? OR priority_3_id = ?', event.id, event.id)
+        ).to be_empty
 
         assert_counts(participant: 0, applicant: 0)
       end
@@ -436,8 +500,14 @@ describe Event do
 
     context 'for course' do
       let(:event) { events(:top_course) }
-      let(:another_event) { Event::Course.create!(name: 'Another', group_ids: event.group_ids,
-                                          dates: event.dates, kind: event_kinds(:slk)) }
+      let(:another_event) do
+        Event::Course.create!(
+          name: 'Another',
+          group_ids: event.group_ids,
+          dates: event.dates,
+          kind: event_kinds(:slk)
+        )
+      end
 
       it 'should count participations with multiple roles in course correctly' do
         p = Fabricate(:event_participation,
@@ -549,34 +619,39 @@ describe Event do
     let(:event) { events(:top_course) }
 
     it 'does not accept invalid person attributes' do
-      event.update({required_contact_attrs: ['foobla'],
-                    hidden_contact_attrs: ['foofofofo']})
+      event.update({ required_contact_attrs: ['foobla'],
+                     hidden_contact_attrs: ['foofofofo'] })
 
-      expect(event.errors.full_messages.first).to match /'foobla' ist kein gültiges Personen-Attribut/
-      expect(event.errors.full_messages.second).to match /'foofofofo' ist kein gültiges Personen-Attribut/
+      expect(event.errors.full_messages.first)
+        .to match(/'foobla' ist kein gültiges Personen-Attribut/)
+      expect(event.errors.full_messages.second)
+        .to match(/'foofofofo' ist kein gültiges Personen-Attribut/)
     end
 
     it 'is not possible to set same attr as hidden and required' do
-      event.update({required_contact_attrs: ['nickname'],
-                    hidden_contact_attrs: ['nickname']})
+      event.update({ required_contact_attrs: ['nickname'],
+                     hidden_contact_attrs: ['nickname'] })
 
-      expect(event.errors.full_messages.first).to match /'nickname' kann nicht als obligatorisch und 'nicht anzeigen' gesetzt werden/
+      expect(event.errors.full_messages.first)
+        .to match(/'nickname' kann nicht als obligatorisch und 'nicht anzeigen' gesetzt werden/)
     end
 
     it 'is not possible to set mandatory attr as hidden' do
-      event.update({hidden_contact_attrs: ['email']})
+      event.update({ hidden_contact_attrs: ['email'] })
 
-      expect(event.errors.full_messages.first).to match /'email' ist ein Pflichtfeld und kann nicht als optional oder 'nicht anzeigen' gesetzt werden/
+      expect(event.errors.full_messages.first)
+        .to match(/'email' ist ein Pflichtfeld und kann nicht als optional oder 'nicht anzeigen' gesetzt werden/) # rubocop:disable Metrics/LineLength
     end
 
     it 'is not possible to set contact association as required' do
-      event.update({required_contact_attrs: ['additional_emails']})
+      event.update({ required_contact_attrs: ['additional_emails'] })
 
-      expect(event.errors.full_messages.first).to match /'additional_emails' ist kein gültiges Personen-Attribut/
+      expect(event.errors.full_messages.first)
+        .to match(/'additional_emails' ist kein gültiges Personen-Attribut/)
     end
 
     it 'is possible to hide contact association' do
-      event.update({hidden_contact_attrs: ['additional_emails']})
+      event.update({ hidden_contact_attrs: ['additional_emails'] })
 
       expect(event.reload.hidden_contact_attrs).to include('additional_emails')
     end
@@ -588,8 +663,10 @@ describe Event do
     let(:event) { events(:top_event) }
 
     it 'resets participant counts' do
-      Fabricate(Event::Role::Leader.name, participation: Fabricate(:event_participation, event: event))
-      Fabricate(Event::Role::Participant.name, participation: Fabricate(:event_participation, event: event))
+      Fabricate(Event::Role::Leader.name,
+                participation: Fabricate(:event_participation, event: event))
+      Fabricate(Event::Role::Participant.name,
+                participation: Fabricate(:event_participation, event: event))
 
       expect(event.participant_count).not_to eq(0)
       expect(event.teamer_count).not_to eq(0)
@@ -617,7 +694,8 @@ describe Event do
     end
 
     it 'copies all groups' do
-      event.groups << Fabricate(Group::TopGroup.name.to_sym, name: 'CCC', parent: groups(:top_layer))
+      event.groups << Fabricate(Group::TopGroup.name.to_sym,
+                                name: 'CCC', parent: groups(:top_layer))
 
       d = event.duplicate
       expect(d.group_ids.size).to eq(2)
@@ -625,6 +703,28 @@ describe Event do
 
   end
 
+  context 'group timestamps' do
+    let(:group) { groups(:top_layer) }
+
+    it 'does not modify the group timestamps when creating an event' do
+      expect do
+        Event.new(name: 'dummy',
+                  groups: [group],
+                  dates: [Event::Date.new(start_at: Time.zone.now)])
+             .save!
+      end.not_to(change { group.updated_at })
+    end
+
+    it 'does not modify the updater id when creating an event' do
+      expect do
+        Event.new(name: 'dummy',
+                  groups: [group],
+                  dates: [Event::Date.new(start_at: Time.zone.now)])
+             .save!
+      end.not_to(change { group.updater_id })
+    end
+
+  end
 
   def set_start_finish(event, start_at)
     start_at = Time.zone.parse(start_at)

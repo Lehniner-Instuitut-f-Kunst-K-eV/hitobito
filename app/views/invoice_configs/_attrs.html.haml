@@ -9,8 +9,10 @@
   = labeled_attr(entry, :payee)
   = labeled_attr(entry, :due_days)
   = labeled_attr(entry, :payment_information)
+  = labeled_attr(entry, :vat_number)
 
 %dl.dl-horizontal
+  = labeled_attr(entry, :currency)
   = labeled(captionize(:payment_slip, object_class(entry)), entry.payment_slip_label)
   = labeled_attr(entry, :beneficiary) if entry.bank?
   = labeled_attr(entry, :participant_number) if entry.with_reference?

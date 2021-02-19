@@ -12,7 +12,7 @@ describe Healthz::MailController do
   describe 'GET show' do
 
     let(:json) { JSON.parse(response.body) }
-    let(:token) { '277ab37a0331e8a4f6591cf4' }
+    let(:token) { '43b3297d893f7d97e3dd60c1' }
     let(:mail)  { Mail.new(File.read(Rails.root.join('spec', 'fixtures', 'email', 'simple.eml'))) }
     let(:cache) { Rails.cache }
     let(:seen_mail) { AppStatus::Mail::SeenMail.build(mail) }
@@ -32,7 +32,7 @@ describe Healthz::MailController do
 
         expect(Mail).to receive(:all).and_return([mail])
 
-        get :show, { token: token }
+        get :show, params: { token: token }
 
         expect(response.status).to eq(200)
 
@@ -54,7 +54,7 @@ describe Healthz::MailController do
 
         expect(Mail).to receive(:all).and_return([mail])
 
-        get :show, { token: token }
+        get :show, params: { token: token }
 
         expect(response.status).to eq(503)
 
@@ -77,7 +77,7 @@ describe Healthz::MailController do
 
       it 'denies access if wrong auth token given' do
 
-        get :show, { token: 'wrong token' }
+        get :show, params: { token: 'wrong token' }
 
         expect(response.status).to eq(401)
 

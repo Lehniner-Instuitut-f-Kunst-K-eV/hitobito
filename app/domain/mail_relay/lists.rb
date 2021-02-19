@@ -19,10 +19,12 @@ module MailRelay
     self.mail_domain = Settings.email.list_domain
 
     class << self
-      def personal_return_path(list_name, sender_email)
+      def personal_return_path(list_name, sender_email, domain = nil)
+        return nil unless sender_email.present?
+
         # recipient format (before @) must match regexp in #reject_not_existing
-        id_suffix = valid_email?(sender_email) ? '+' + sender_email.tr('@', '=') : ''
-        "#{list_name}#{SENDER_SUFFIX}#{id_suffix}@#{mail_domain}"
+        id_suffix = '+' + sender_email.tr('@', '=')
+        "#{list_name}#{SENDER_SUFFIX}#{id_suffix}@#{domain || mail_domain}"
       end
 
       def app_sender_name
@@ -42,7 +44,7 @@ module MailRelay
     def reject_not_allowed
       if send_reject_message?
         reply = prepare_not_allowed_message
-        if valid_email?(reply.to.to_s.strip)
+        if valid_email?(reply.to.first)
           logger.info("Rejecting email from #{sender_email} for list #{envelope_receiver_name}")
           deliver(reply)
         end
@@ -90,7 +92,7 @@ module MailRelay
 
     # List of receiver email addresses for the resent email.
     def receivers
-      @mail_log.update(mailing_list: mailing_list)
+      @mail_log.message.update(mailing_list: mailing_list)
       Person.mailing_emails_for(mailing_list.people.to_a,
                                 mailing_list.labels)
     end
@@ -129,6 +131,8 @@ module MailRelay
     end
 
     def sender_is_additional_sender?
+      return false unless sender_email.present?
+
       additional_senders = mailing_list.additional_sender.to_s
       list = additional_senders.split(/[,;]/).collect(&:strip).select(&:present?)
       sender_domain = sender_email.sub(/^[^@]*@/, '*@')
@@ -158,7 +162,7 @@ module MailRelay
       Person.joins('LEFT JOIN additional_emails ON people.id = additional_emails.contactable_id' \
                    " AND additional_emails.contactable_type = '#{Person.sti_name}'").
              where('people.email = ? OR additional_emails.email = ?', sender_email, sender_email).
-             uniq
+             distinct
     end
 
     def send_reject_message?

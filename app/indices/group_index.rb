@@ -5,6 +5,8 @@
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
 
+module GroupIndex; end
+
 ThinkingSphinx::Index.define_partial :group do
   indexes name, short_name, sortable: true
   indexes email, address, zip_code, town, country
@@ -15,5 +17,5 @@ ThinkingSphinx::Index.define_partial :group do
   indexes social_accounts.name, as: :social_account
   indexes additional_emails.email, as: :additional_email
 
-  where 'groups.deleted_at IS NULL'
+  where "#{Group.quoted_table_name}.deleted_at IS NULL"
 end

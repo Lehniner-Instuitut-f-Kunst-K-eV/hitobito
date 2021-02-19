@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2019, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -12,11 +12,11 @@ module NavigationHelper
       url: :groups_path,
       icon_name: 'users',
       active_for: %w(groups people),
-      inactive_for: %w(invoices invoice_articles invoice_config payment_process) },
+      inactive_for: %w(invoices invoice_articles invoice_config payment_process invoice_lists) },
 
     { label: :events,
       url: :list_events_path,
-      icon_name: 'calendar',
+      icon_name: 'calendar-alt',
       active_for: %w(list_events),
       if: ->(_) { can?(:list_available, Event) } },
 
@@ -28,14 +28,22 @@ module NavigationHelper
 
     { label: :invoices,
       url: :first_group_invoices_or_root_path,
-      icon_name: 'money',
+      icon_name: 'money-bill-alt',
       if: ->(_) { current_user.finance_groups.any? },
-      active_for: %w(invoices invoice_articles invoice_config payment_process) },
+      active_for: %w(invoices invoice_articles invoice_config payment_process invoice_lists) },
 
     { label: :admin,
       url: :label_formats_path,
       icon_name: 'cog',
-      active_for: %w(label_formats custom_contents event_kinds qualification_kinds),
+      active_for: %w(label_formats
+                     custom_contents
+                     event_kinds
+                     qualification_kinds
+                     oauth/applications
+                     help_texts
+                     oauth/active_authorizations
+                     event_feed
+                     tags),
       if: ->(_) { can?(:index, LabelFormat) } }
   ]
 
@@ -69,7 +77,8 @@ module NavigationHelper
       classes += " #{active_class}"
     end
     content_tag(:li, class: classes) do
-      concat(link_to(icon(icon_name) + label, url))
+      navigation_text = icon(icon_name) + label
+      concat(link_to(navigation_text, url, data: { disable_with: navigation_text }))
       yield if block_given? && active
     end
   end

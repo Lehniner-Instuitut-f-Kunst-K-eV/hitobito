@@ -1,0 +1,22 @@
+/ #  Copyright (c) 2012-2021, CVP Schweiz. This file is part of
+/ #  hitobito and licensed under the Affero General Public License version 3
+/ #  or later. See the COPYING file at the top-level directory or at
+/ #  https://github.com/hitobito/hitobito.
+
+= standard_form(entry, url: [parent.group, parent, entry], data: { group: group_path(parent.group.layer_group)  }) do |f|
+  .controls
+    %p.text
+      = link_to([parent.group, parent, :subscriptions, format: :pdf], target: :_blank) do
+        =t('.recipient_info', count: @recipient_count, model_class: model_class.model_name.human)
+
+  = f.hidden_field :type
+
+  - if entry.text_message?
+    = render 'messages/text_message/fields', f: f
+  - elsif entry.invoice?
+    = render 'messages/letter_with_invoice/fields', f: f
+  - elsif entry.letter?
+    = render 'messages/letter/fields', f: f
+
+  %br
+  = form_buttons(f, cancel_url: [parent.group, parent, :messages])

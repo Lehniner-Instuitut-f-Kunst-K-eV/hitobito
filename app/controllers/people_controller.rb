@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 #  Copyright (c) 2012-2018, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
@@ -7,8 +7,8 @@
 
 class PeopleController < CrudController
 
-  include Concerns::RenderPeopleExports
-  include Concerns::AsyncDownload
+  include RenderPeopleExports
+  include AsyncDownload
 
   self.nesting = Group
 
@@ -29,6 +29,7 @@ class PeopleController < CrudController
 
   decorates :group, :person, :people, :add_requests
 
+
   helper_method :index_full_ability?
 
   # load group before authorization
@@ -44,12 +45,14 @@ class PeopleController < CrudController
   before_render_show :load_grouped_person_tags, if: -> { html_request? }
   before_render_index :load_people_add_requests, if: -> { html_request? }
 
-  def index # rubocop:disable Metrics/AbcSize we support a lot of format, hence many code-branches
+  helper_method :list_filter_args
+
+  def index # rubocop:disable Metrics/AbcSize we support a lot of formats, hence many code-branches
     respond_to do |format|
       format.html  { @people = prepare_entries(filter_entries).page(params[:page]) }
       format.pdf   { render_pdf(filter_entries, group) }
-      format.csv   { render_tabular_entries_in_background(:csv)  && redirect_to(action: :index) }
-      format.xlsx  { render_tabular_entries_in_background(:xlsx) && redirect_to(action: :index) }
+      format.csv   { render_tabular_entries_in_background(:csv) }
+      format.xlsx  { render_tabular_entries_in_background(:xlsx) }
       format.vcf   { render_vcf(filter_entries.includes(:phone_numbers)) }
       format.email { render_emails(filter_entries) }
       format.json  { render_entries_json(filter_entries) }
@@ -69,27 +72,30 @@ class PeopleController < CrudController
 
   # POST button, send password instructions
   def send_password_instructions
-    Person::SendLoginJob.new(entry, current_user).enqueue!
-    notice = I18n.t("#{controller_name}.#{action_name}")
+    msg = send_login_job(entry, current_user)
+
     respond_to do |format|
-      format.html { redirect_to group_person_path(group, entry), notice: notice }
+      format.html { redirect_to group_person_path(group, entry), *msg }
       format.js do
-        flash.now.notice = notice
+        flash.now[msg.keys.first] = msg.values.first
         render 'shared/update_flash'
       end
     end
   end
 
   # PUT button, ajax
-  def primary_group
-    entry.update!(primary_group_id: params[:primary_group_id])
+  def primary_group # rubocop:disable Metrics/AbcSize
+    success = entry.update(primary_group_id: params[:primary_group_id])
     respond_to do |format|
       format.html { redirect_to group_person_path(group, entry) }
-      format.js
+      format.js do
+        return render :primary_group if success
+
+        flash.now.alert = I18n.t('global.errors.header', count: entry.errors.size)
+        render 'shared/update_flash'
+      end
     end
   end
-
-  private_class_method
 
   # dont use class level accessor as expression is evaluated whenever constant is
   # loaded which might be before wagon that defines groups / roles has been loaded
@@ -102,14 +108,10 @@ class PeopleController < CrudController
 
   alias group parent
 
+  # every person may be displayed underneath the root group,
+  # even if it does not directly belong to it.
   def find_entry
-    if group && group.root?
-      # every person may be displayed underneath the root group,
-      # even if it does not directly belong to it.
-      Person.find(params[:id])
-    else
-      super
-    end
+    group&.root? ? Person.find(params[:id]) : super
   end
 
   def assign_attributes
@@ -134,7 +136,18 @@ class PeopleController < CrudController
   end
 
   def load_grouped_person_tags
-    @tags = entry.tags.grouped_by_category
+    @tags = collect_grouped_person_tags
+  end
+
+  def collect_grouped_person_tags
+    tags = entry.taggings.includes(:tag).order('tags.name').each_with_object({}) do |t, memo|
+      tag = t.tag
+      tag.hitobito_tooltip = t.hitobito_tooltip
+
+      memo[tag.category] ||= []
+      memo[tag.category] << tag
+    end
+    ActsAsTaggableOn::Tag.order_categorized(tags)
   end
 
   def show_add_request_status?
@@ -155,7 +168,7 @@ class PeopleController < CrudController
 
   def filter_entries
     entries = person_filter.entries
-    entries = entries.reorder(sort_expression) if sorting?
+    entries = entries.reorder(Arel.sql(sort_expression)) if sorting?
     entries
   end
 
@@ -182,26 +195,14 @@ class PeopleController < CrudController
     end
   end
 
-  def prepare_tabular_entries(entries, full)
-    if full
-      entries
-        .select('people.*')
-        .preload_accounts
-        .includes(relations_to_tails: :tail, qualifications: { qualification_kind: :translations })
-        .includes(:primary_group)
-    else
-      entries.preload_public_accounts.includes(:primary_group)
-    end
-  end
-
   def render_tabular_entry(format)
     render_tabular(format, [entry], params[:details].present? && can?(:show_full, entry))
   end
 
   def render_tabular_in_background(format, full, filename)
     Export::PeopleExportJob.new(
-      format, current_person.id, person_filter,
-      params.slice(:household).merge(full: full, filename: filename)
+      format, current_person.id, @group.id, list_filter_args,
+      params.slice(:household, :selection).merge(full: full, filename: filename)
     ).enqueue!
   end
 
@@ -212,9 +213,7 @@ class PeopleController < CrudController
   end
 
   def render_entries_json(entries)
-    render json: ListSerializer.new(prepare_entries(entries).
-                                      includes(:social_accounts).
-                                      decorate,
+    render json: ListSerializer.new(prepare_entries(entries).includes(:social_accounts).decorate,
                                     group: @group,
                                     multiple_groups: @person_filter.multiple_groups,
                                     serializer: PeopleSerializer,
@@ -233,14 +232,15 @@ class PeopleController < CrudController
     end
   end
   public :index_full_ability? # for serializer
-  hide_action :index_full_ability?
 
   def authorize_class
     authorize!(:index_people, group)
   end
 
   def validate_household
-    household.valid?
+    unless household.empty?
+      household.valid? || throw(:abort)
+    end
   end
 
   def persist_household
@@ -252,7 +252,18 @@ class PeopleController < CrudController
   end
 
   def person_filter
-    @person_filter ||= Person::Filter::List.new(@group, current_user, list_filter_args)
+    @person_filter ||= Person::Filter::List.new(@group,
+                                                current_user || service_token_user,
+                                                list_filter_args)
+  end
+
+  def send_login_job(entry, current_user)
+    if Truemail.valid?(entry.email)
+      Person::SendLoginJob.new(entry, current_user).enqueue!
+      { notice: I18n.t("#{controller_name}.#{action_name}") }
+    else
+      { alert: I18n.t("#{controller_name}.#{action_name}_invalid_email") }
+    end
   end
 
 end

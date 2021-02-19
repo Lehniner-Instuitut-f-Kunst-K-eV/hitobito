@@ -1,6 +1,4 @@
-# encoding: utf-8
-
-#  Copyright (c) 2012-2013, Jungwacht Blauring Schweiz. This file is part of
+#  Copyright (c) 2012-2019, Jungwacht Blauring Schweiz. This file is part of
 #  hitobito and licensed under the Affero General Public License version 3
 #  or later. See the COPYING file at the top-level directory or at
 #  https://github.com/hitobito/hitobito.
@@ -14,7 +12,7 @@ module Sheet
     tab 'activerecord.models.person.other',
         :group_people_path,
         if: :index_people,
-        alt: [:group_roles_path, :new_group_csv_imports_path],
+        alt: [:group_roles_path, :new_group_csv_imports_path, :group_person_duplicates_path],
         params: { returning: true }
 
     tab 'activerecord.models.event.other',
@@ -53,11 +51,16 @@ module Sheet
         :deleted_subgroups_group_path,
         if: :deleted_subgroups
 
+    tab 'activerecord.models.group_setting.other',
+        :group_group_settings_path,
+        if: (lambda do |view, group|
+          view.can?(:update, group)
+        end)
 
     delegate :group_path, to: :view
 
     def render_breadcrumbs
-      return ''.html_safe unless breadcrumbs?
+      return FormatHelper::EMPTY_STRING unless breadcrumbs?
 
       content_tag(:div, class: 'breadcrumb') do
         content_tag(:ul) do
@@ -90,7 +93,7 @@ module Sheet
 
     def breadcrumbs
       entry.parent.hierarchy.collect do |g|
-        link_to(g.to_s, group_path(g))
+        link_to(g.to_s, group_path(g), data: { disable_with: g.to_s })
       end
     end
 
@@ -103,7 +106,7 @@ module Sheet
     end
 
     def belongs_to
-      translate(:belongs_to).html_safe +
+      translate(:belongs_to).html_safe + # rubocop:disable Rails/OutputSafety
         FormatHelper::EMPTY_STRING +
         FormatHelper::EMPTY_STRING
     end
